@@ -1,0 +1,79 @@
+'use client';
+
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from './Providers';
+
+function csrf() {
+  const m = document.cookie.match(/(?:^|;\s*)weightloss_csrf=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : '';
+}
+
+type Goals = {
+  target_weight_kg: string | null; target_calorie_deficit: number | null;
+  target_date: string | null; calorie_target: number | null;
+  protein_target_g: number | null; carbs_target_g: number | null; fat_target_g: number | null;
+};
+
+export function GoalsClient({ initial }: { initial: Goals }) {
+  const router = useRouter();
+  const [tw, setTw] = useState(initial.target_weight_kg || '');
+  const [deficit, setDeficit] = useState(initial.target_calorie_deficit?.toString() || '');
+  const [tdate, setTdate] = useState(initial.target_date || '');
+  const [cal, setCal] = useState(initial.calorie_target?.toString() || '');
+  const [p, setP] = useState(initial.protein_target_g?.toString() || '');
+  const [c, setC] = useState(initial.carbs_target_g?.toString() || '');
+  const [f, setF] = useState(initial.fat_target_g?.toString() || '');
+  const [pending, startTransition] = useTransition();
+  const num = (v: string) => v === '' ? null : Number(v);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/goals', {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'content-type': 'application/json', 'x-csrf-token': csrf() },
+        body: JSON.stringify({
+          target_weight_kg: num(tw), target_calorie_deficit: num(deficit),
+          target_date: tdate || null,
+          calorie_target: num(cal), protein_target_g: num(p),
+          carbs_target_g: num(c), fat_target_g: num(f)
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Save failed');
+      toast('ok', 'Goals updated');
+      startTransition(() => router.refresh());
+    } catch (e) { toast('err', (e as Error).message); }
+  }
+
+  return (
+    <form onSubmit={save} className="card grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <label className="block"><span className="label">Target weight (kg)</span>
+        <input className="input" type="number" step="0.1" min="1" max="500" value={tw} onChange={(e) => setTw(e.target.value)} />
+      </label>
+      <label className="block"><span className="label">Daily deficit (kcal)</span>
+        <input className="input" type="number" min="0" max="5000" value={deficit} onChange={(e) => setDeficit(e.target.value)} />
+      </label>
+      <label className="block"><span className="label">Target date</span>
+        <input className="input" type="date" value={tdate} onChange={(e) => setTdate(e.target.value)} />
+      </label>
+      <label className="block"><span className="label">Calorie target</span>
+        <input className="input" type="number" min="0" max="20000" value={cal} onChange={(e) => setCal(e.target.value)} />
+      </label>
+      <label className="block"><span className="label">Protein (g)</span>
+        <input className="input" type="number" min="0" max="1000" value={p} onChange={(e) => setP(e.target.value)} />
+      </label>
+      <label className="block"><span className="label">Carbs (g)</span>
+        <input className="input" type="number" min="0" max="2000" value={c} onChange={(e) => setC(e.target.value)} />
+      </label>
+      <label className="block"><span className="label">Fat (g)</span>
+        <input className="input" type="number" min="0" max="500" value={f} onChange={(e) => setF(e.target.value)} />
+      </label>
+      <div className="col-span-2 sm:col-span-4">
+        <button className="btn-primary" disabled={pending}>Save goals</button>
+      </div>
+    </form>
+  );
+}

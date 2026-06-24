@@ -1,0 +1,148 @@
+# =============================================================================
+# Weight Loss Web App - Portainer / Docker Compose stack
+# Target host: ASUSTOR AS5404T (ADM)
+# Persistent data uses bind mounts only - no Docker named volumes.
+# =============================================================================
+#
+# REQUIRED HOST FOLDERS (create these on the NAS first, before deploying):
+#   /volume1/Docker/weightloss-app/app         <- this repository / source code
+#   /volume1/Docker/weightloss-app/data        <- Next.js runtime data
+#   /volume1/Docker/weightloss-app/db          <- PostgreSQL data files
+#   /volume1/Docker/weightloss-app/uploads     <- progress photos
+#   /volume1/Docker/weightloss-app/backups     <- automatic & manual backups
+#   /volume1/Docker/weightloss-app/logs        <- application and DB logs
+#   /volume1/Docker/weightloss-app/env         <- .env file lives here
+#
+# All folders are owned by your NAS user (typically UID 1000, GID 1000).
+# If you create them via SSH, use:
+#   mkdir -p /volume1/Docker/weightloss-app/{app,data,db,uploads,backups,logs,env}
+#
+# After putting the source code in /volume1/Docker/weightloss-app/app,
+# copy .env.example to /volume1/Docker/weightloss-app/env/.env and edit it
+# (see README).
+#
+# Portainer deployment: in Portainer open Stacks -> Add stack -> paste or
+# upload this file.
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL 16 (official image)
+  # Data is fully bind-mounted into /volume1/Docker/weightloss-app/db
+  # NOTE: The bind-mount folder must be owned by UID 999 (postgres).
+  # Run once before first start: chown -R 999:999 /volume1/Docker/weightloss-app/db
+  # ---------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: weightloss-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-weightloss}
+      POSTGRES_USER: ${POSTGRES_USER:-weightloss}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TZ: ${TZ:-UTC}
+    volumes:
+      - /volume1/Docker/weightloss-app/db:/var/lib/postgresql/data
+      - /volume1/Docker/weightloss-app/logs/postgres:/var/log/postgresql
+      - ./app/lib/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-weightloss} -d ${POSTGRES_DB:-weightloss} || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - weightloss-net
+
+  # ---------------------------------------------------------------------------
+  # Next.js application (frontend + API)
+  # ---------------------------------------------------------------------------
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    image: weightloss-app:latest
+    container_name: weightloss-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      # Postgres connection (matches db service)
+      DATABASE_URL: postgres://${POSTGRES_USER:-weightloss}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-weightloss}
+      # Session + auth secrets
+      SESSION_SECRET: ${SESSION_SECRET}
+      SESSION_COOKIE_NAME: weightloss_session
+      SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-720}        # 30 days
+      # Upload limits
+      MAX_PHOTO_SIZE_MB: ${MAX_PHOTO_SIZE_MB:-10}
+      MAX_PHOTO_STORAGE_MB: ${MAX_PHOTO_STORAGE_MB:-500}
+      MAX_PHOTOS_PER_DAY: ${MAX_PHOTOS_PER_DAY:-50}
+      # Rate limiting
+      LOGIN_RATE_LIMIT_PER_HOUR: ${LOGIN_RATE_LIMIT_PER_HOUR:-10}
+      # Public URL (optional, used for emails / future reverse proxy)
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3886}
+      # Initial seed admin (only used if no users exist yet)
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
+      SEED_ADMIN_NAME: ${SEED_ADMIN_NAME:-Admin}
+      # Default app setting: invite-only registration
+      INVITE_ONLY: ${INVITE_ONLY:-true}
+      # Where bind-mounted dirs live inside the container
+      UPLOADS_DIR: /app/uploads
+      LOG_DIR: /app/logs
+      DATA_DIR: /app/data
+      TZ: ${TZ:-UTC}
+    volumes:
+      # Persistent application data (Next.js cache, server logs)
+      - /volume1/Docker/weightloss-app/data:/app/data
+      - /volume1/Docker/weightloss-app/logs/app:/app/logs
+      # Uploaded photos - per-user folders are created at runtime under here
+      - /volume1/Docker/weightloss-app/uploads:/app/uploads
+      # Env file (read-only inside container)
+      - /volume1/Docker/weightloss-app/env/.env:/app/.env.production:ro
+    ports:
+      - "${APP_PORT:-3886}:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - weightloss-net
+
+  # ---------------------------------------------------------------------------
+  # Backup sidecar - daily pg_dump + tar of uploads, with rotation
+  # ---------------------------------------------------------------------------
+  backup:
+    build:
+      context: ./backup
+    image: weightloss-backup:latest
+    container_name: weightloss-backup
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: db
+      POSTGRES_USER: ${POSTGRES_USER:-weightloss}
+      POSTGRES_DB: ${POSTGRES_DB:-weightloss}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+      BACKUP_CRON: ${BACKUP_CRON:-0 3 * * *}
+      TZ: ${TZ:-UTC}
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+    volumes:
+      - /volume1/Docker/weightloss-app/backups:/backups
+      - /volume1/Docker/weightloss-app/uploads:/uploads:ro
+      - /volume1/Docker/weightloss-app/logs/backup:/logs
+    networks:
+      - weightloss-net
+
+networks:
+  weightloss-net:
+    driver: bridge
