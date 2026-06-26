@@ -11,9 +11,8 @@ export function LogoutButton() {
     router.refresh();
   }
   return (
-    <button type="button" className="btn" onClick={onClick} title="Sign out">
+    <button type="button" className="btn-ghost" onClick={onClick} title="Sign out">
       <LogOut size={14} />
-      <span className="hidden sm:inline">Sign out</span>
     </button>
   );
 }

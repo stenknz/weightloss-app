@@ -16,12 +16,18 @@ const config: Config = {
         muted: 'rgb(var(--muted) / <alpha-value>)',
         accent: 'rgb(var(--accent) / <alpha-value>)',
         'accent-fg': 'rgb(var(--accent-fg) / <alpha-value>)',
+        teal: 'rgb(var(--teal) / <alpha-value>)',
+        blue: 'rgb(var(--blue) / <alpha-value>)',
         good: 'rgb(var(--good) / <alpha-value>)',
         warn: 'rgb(var(--warn) / <alpha-value>)',
         bad: 'rgb(var(--bad) / <alpha-value>)'
       },
       fontFamily: {
         sans: ['ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif']
+      },
+      borderRadius: {
+        '2xl': '0.9rem',
+        'xl': '0.7rem'
       }
     }
   },

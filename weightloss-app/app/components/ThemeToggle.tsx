@@ -10,13 +10,12 @@ export function ThemeToggle() {
   return (
     <button
       type="button"
-      className="btn"
+      className="btn-ghost"
       title={`Theme: ${theme} (click for ${next})`}
       onClick={() => setTheme(next)}
       aria-label="Toggle theme"
     >
       <Icon size={14} />
-      <span className="hidden sm:inline capitalize">{theme}</span>
     </button>
   );
 }

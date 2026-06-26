@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { ReactNode } from 'react';
 import './globals.css';
 import { Providers } from '@/components/Providers';
+import { Sidebar } from '@/components/Sidebar';
 import { Navbar } from '@/components/Navbar';
 import { getCurrentUser } from '@/lib/auth';
 
@@ -19,14 +20,14 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       <body>
         <Providers>
           {user ? (
-            <div className="min-h-screen flex flex-col">
-              <Navbar user={user} />
-              <main className="flex-1 mx-auto w-full max-w-6xl px-3 sm:px-4 py-4">
-                {children}
-              </main>
-              <footer className="text-center text-xs text-muted py-4">
-                Local-first weight loss tracker
-              </footer>
+            <div className="min-h-screen flex">
+              <Sidebar user={user} />
+              <div className="flex-1 flex flex-col md:ml-16 pb-14 md:pb-0">
+                <Navbar user={user} />
+                <main className="flex-1 mx-auto w-full max-w-6xl px-4 sm:px-6 py-4 sm:py-6">
+                  {children}
+                </main>
+              </div>
             </div>
           ) : (
             <main className="min-h-screen">{children}</main>
