@@ -22,10 +22,11 @@ COPY --from=builder /build/.next/standalone ./
 COPY --from=builder /build/.next/static ./.next/static
 COPY --from=builder /build/public ./public
 COPY --from=builder /build/lib/schema.sql ./lib/schema.sql
+COPY entrypoint.js ./
 
 EXPOSE 7673
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=5 --start-period=30s \
   CMD wget -qO- http://127.0.0.1:7673/api/health || exit 1
 
-CMD ["node", "server.js"]
+CMD ["node", "entrypoint.js"]
