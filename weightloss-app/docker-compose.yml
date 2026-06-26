@@ -1,7 +1,6 @@
 services:
   app:
-    # Replace 'yourdockerhubuser' with your actual Docker Hub username
-    image: yourdockerhubuser/weightloss-app:latest
+    image: stenknz/weightloss-app:latest
     container_name: weightloss-app
     restart: unless-stopped
     ports:
