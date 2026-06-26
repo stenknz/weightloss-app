@@ -3,7 +3,7 @@ import { json, err, validated } from '@/lib/api';
 import { loginSchema } from '@/lib/validation';
 import { query, withTransaction } from '@/lib/db';
 import { verifyPassword } from '@/lib/password';
-import { createSession, setSessionCookies } from '@/lib/session';
+import { createSession, createSessionInTransaction, setSessionCookies } from '@/lib/session';
 import { audit } from '@/lib/audit';
 import { getClientIp } from '@/lib/auth';
 import { checkRateLimit, loginKey, resetRateLimit } from '@/lib/ratelimit';
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
 
   const ua = request.headers.get('user-agent');
   const { sessionId, csrfToken, expiresAt } = await withTransaction(async (client) => {
-    const r = await createSession(user.id, ip, ua);
+    const r = await createSessionInTransaction(client, user.id, ip, ua);
     return r;
   });
   setSessionCookies(sessionId, csrfToken, expiresAt);

@@ -6,7 +6,8 @@
 // =============================================================================
 import { cookies } from 'next/headers';
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
-import { query } from './db';
+import { query, pool } from './db';
+import { PoolClient } from 'pg';
 
 const COOKIE_NAME = process.env.SESSION_COOKIE_NAME || 'weightloss_session';
 const CSRF_COOKIE = 'weightloss_csrf';
@@ -57,6 +58,24 @@ export async function createSession(
   const csrf = newCsrfToken();
   const expires = new Date(Date.now() + TTL_HOURS * 3600 * 1000);
   await query(
+    `INSERT INTO sessions (id, user_id, csrf_token, expires_at, ip_address, user_agent)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [id, userId, csrf, expires, ip, userAgent]
+  );
+  return { sessionId: id, csrfToken: csrf, expiresAt: expires };
+}
+
+/** Version of createSession that runs inside a transaction (uses the passed client). */
+export async function createSessionInTransaction(
+  client: PoolClient,
+  userId: number,
+  ip: string | null,
+  userAgent: string | null
+): Promise<{ sessionId: string; csrfToken: string; expiresAt: Date }> {
+  const id = newSessionId();
+  const csrf = newCsrfToken();
+  const expires = new Date(Date.now() + TTL_HOURS * 3600 * 1000);
+  await client.query(
     `INSERT INTO sessions (id, user_id, csrf_token, expires_at, ip_address, user_agent)
      VALUES ($1, $2, $3, $4, $5, $6)`,
     [id, userId, csrf, expires, ip, userAgent]

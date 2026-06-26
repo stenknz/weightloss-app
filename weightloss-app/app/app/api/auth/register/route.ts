@@ -3,7 +3,7 @@ import { json, err, validated } from '@/lib/api';
 import { registerSchema } from '@/lib/validation';
 import { query, withTransaction } from '@/lib/db';
 import { hashPassword, validatePasswordStrength } from '@/lib/password';
-import { createSession, setSessionCookies } from '@/lib/session';
+import { createSession, createSessionInTransaction, setSessionCookies } from '@/lib/session';
 import { audit } from '@/lib/audit';
 import { getClientIp, getCurrentUser } from '@/lib/auth';
 import { getBoolSetting, setSetting } from '@/lib/settings';
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
         [u.rows[0].id, parsed.data.invite_code.toUpperCase()]
       );
     }
-    const sid = await createSession(u.rows[0].id, ip, request.headers.get('user-agent'));
+    const sid = await createSessionInTransaction(client, u.rows[0].id, ip, request.headers.get('user-agent'));
     return { user: u.rows[0], ...sid };
   });
 
