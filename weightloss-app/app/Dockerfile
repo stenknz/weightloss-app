@@ -1,17 +1,12 @@
-FROM node:20-alpine AS deps
-RUN apk add --no-cache libc6-compat
+FROM node:20-slim AS builder
 WORKDIR /build
 COPY package.json package-lock.json* ./
-RUN npm install --no-audit --no-fund
-
-FROM node:20-alpine AS builder
-WORKDIR /build
-COPY --from=deps /build/node_modules ./node_modules
+RUN npm install --no-audit --no-fund --ignore-scripts
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -19,14 +14,12 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=7673
 ENV HOSTNAME=0.0.0.0
 
-RUN apk add --no-cache wget
+RUN apt-get update -qq && apt-get install -y -qq wget && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder --chown=node:node /build/.next/standalone ./
-COPY --from=builder --chown=node:node /build/.next/static ./.next/static
-COPY --from=builder --chown=node:node /build/public ./public
-COPY --from=builder --chown=node:node /build/lib/schema.sql ./lib/schema.sql
-
-USER node
+COPY --from=builder /build/.next/standalone ./
+COPY --from=builder /build/.next/static ./.next/static
+COPY --from=builder /build/public ./public
+COPY --from=builder /build/lib/schema.sql ./lib/schema.sql
 
 EXPOSE 7673
 
