@@ -88,7 +88,7 @@ export function setSessionCookies(sessionId: string, csrfToken: string, expiresA
   const sig = sign(sessionId);
   jar.set(COOKIE_NAME, `${sessionId}.${sig}`, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.COOKIE_SECURE === 'true',
     sameSite: 'lax',
     path: '/',
     expires: expiresAt
@@ -98,7 +98,7 @@ export function setSessionCookies(sessionId: string, csrfToken: string, expiresA
   // match the value stored in the DB for the active session.
   jar.set(CSRF_COOKIE, csrfToken, {
     httpOnly: false,
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.COOKIE_SECURE === 'true',
     sameSite: 'lax',
     path: '/',
     expires: expiresAt
@@ -190,7 +190,7 @@ export async function rotateCsrf(userId: number): Promise<string> {
   const expires = new Date(Date.now() + TTL_HOURS * 3600 * 1000);
   cookies().set(CSRF_COOKIE, csrf, {
     httpOnly: false,
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.COOKIE_SECURE === 'true',
     sameSite: 'lax',
     path: '/',
     expires
