@@ -19,16 +19,14 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=7673
 ENV HOSTNAME=0.0.0.0
 
-RUN addgroup -g 1000 -S app
-RUN adduser -S -u 1000 -G app app
 RUN apk add --no-cache wget
 
-COPY --from=builder --chown=app:app /build/.next/standalone ./
-COPY --from=builder --chown=app:app /build/.next/static ./.next/static
-COPY --from=builder --chown=app:app /build/public ./public
-COPY --from=builder --chown=app:app /build/lib/schema.sql ./lib/schema.sql
+COPY --from=builder --chown=node:node /build/.next/standalone ./
+COPY --from=builder --chown=node:node /build/.next/static ./.next/static
+COPY --from=builder --chown=node:node /build/public ./public
+COPY --from=builder --chown=node:node /build/lib/schema.sql ./lib/schema.sql
 
-USER app
+USER node
 
 EXPOSE 7673
 
