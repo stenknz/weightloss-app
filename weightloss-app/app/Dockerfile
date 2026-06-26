@@ -1,12 +1,13 @@
-FROM node:20-slim AS builder
+FROM node:20-alpine AS builder
+RUN apk add --no-cache libc6-compat
 WORKDIR /build
 COPY package.json package-lock.json* ./
-RUN npm install --no-audit --no-fund --ignore-scripts
+RUN npm install
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-FROM node:20-slim AS runner
+FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -14,7 +15,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=7673
 ENV HOSTNAME=0.0.0.0
 
-RUN apt-get update -qq && apt-get install -y -qq wget && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache wget
 
 COPY --from=builder /build/.next/standalone ./
 COPY --from=builder /build/.next/static ./.next/static
