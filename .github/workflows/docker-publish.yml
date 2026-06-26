@@ -15,6 +15,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Debug file structure
+        run: ls -la && ls -la weightloss-app/app/ && cat weightloss-app/app/package.json | head -5
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -37,6 +40,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./weightloss-app/app
+          file: ./weightloss-app/app/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
