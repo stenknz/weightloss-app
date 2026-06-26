@@ -6,7 +6,7 @@ RUN npm install
 COPY . .
 ARG DATABASE_URL=postgres://p:p@localhost:5432/p
 ENV NEXT_TELEMETRY_DISABLED=1 DATABASE_URL=$DATABASE_URL
-RUN npm run build
+RUN mkdir -p public && npm run build
 
 FROM node:20-alpine AS runner
 WORKDIR /app
