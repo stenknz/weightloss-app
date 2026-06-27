@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from './Providers';
+import { adminUpdateUser, adminDeleteUser } from '@/lib/actions/admin';
 
 type Row = {
   id: number; email: string; name: string; role: string;
@@ -10,11 +11,6 @@ type Row = {
   weigh_ins: number; food_logs: number; photos: number;
   photo_storage_used_bytes: number;
 };
-
-function csrf() {
-  const m = document.cookie.match(/(?:^|;\s*)weightloss_csrf=([^;]+)/);
-  return m ? decodeURIComponent(m[1]) : '';
-}
 
 export function AdminUsersClient({ initial, currentUserId }: { initial: Row[]; currentUserId: number }) {
   const router = useRouter();
@@ -25,19 +21,11 @@ export function AdminUsersClient({ initial, currentUserId }: { initial: Row[]; c
   const [newPw, setNewPw] = useState('');
 
   async function toggleActive(id: number, active: boolean) {
-    try {
-      const res = await fetch(`/api/admin/users/${id}`, {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'content-type': 'application/json', 'x-csrf-token': csrf() },
-        body: JSON.stringify({ is_active: !active })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed');
-      setRows((prev) => prev.map((r) => r.id === id ? { ...r, is_active: !active } : r));
-      toast('ok', `User ${!active ? 'enabled' : 'disabled'}`);
-      startTransition(() => router.refresh());
-    } catch (e) { toast('err', (e as Error).message); }
+    const r = await adminUpdateUser(id, { is_active: !active });
+    if ('error' in r && r.error) { toast('err', r.error); return; }
+    setRows((prev) => prev.map((r2) => r2.id === id ? { ...r2, is_active: !active } : r2));
+    toast('ok', `User ${!active ? 'enabled' : 'disabled'}`);
+    startTransition(() => router.refresh());
   }
 
   async function changeRole(id: number, role: string) {
@@ -45,53 +33,30 @@ export function AdminUsersClient({ initial, currentUserId }: { initial: Row[]; c
       toast('err', 'You cannot demote yourself');
       return;
     }
-    try {
-      const res = await fetch(`/api/admin/users/${id}`, {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'content-type': 'application/json', 'x-csrf-token': csrf() },
-        body: JSON.stringify({ role })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed');
-      setRows((prev) => prev.map((r) => r.id === id ? { ...r, role } : r));
-      toast('ok', `Role changed to ${role}`);
-      startTransition(() => router.refresh());
-    } catch (e) { toast('err', (e as Error).message); }
+    const r = await adminUpdateUser(id, { role });
+    if ('error' in r && r.error) { toast('err', r.error); return; }
+    setRows((prev) => prev.map((r2) => r2.id === id ? { ...r2, role } : r2));
+    toast('ok', `Role changed to ${role}`);
+    startTransition(() => router.refresh());
   }
 
   async function setPassword(id: number) {
     if (newPw.length < 10) { toast('err', 'Password must be at least 10 characters'); return; }
-    try {
-      const res = await fetch(`/api/admin/users/${id}`, {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'content-type': 'application/json', 'x-csrf-token': csrf() },
-        body: JSON.stringify({ password: newPw })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed');
-      setPasswordId(null); setNewPw('');
-      toast('ok', 'Password reset');
-      startTransition(() => router.refresh());
-    } catch (e) { toast('err', (e as Error).message); }
+    const r = await adminUpdateUser(id, { password: newPw });
+    if ('error' in r && r.error) { toast('err', r.error); return; }
+    setPasswordId(null); setNewPw('');
+    toast('ok', 'Password reset');
+    startTransition(() => router.refresh());
   }
 
   async function deleteUser(id: number) {
     if (id === currentUserId) { toast('err', 'You cannot delete yourself'); return; }
     if (!confirm('Delete this user and ALL their data? This cannot be undone.')) return;
-    try {
-      const res = await fetch(`/api/admin/users/${id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { 'x-csrf-token': csrf() }
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed');
-      setRows((prev) => prev.filter((r) => r.id !== id));
-      toast('ok', 'User deleted');
-      startTransition(() => router.refresh());
-    } catch (e) { toast('err', (e as Error).message); }
+    const r = await adminDeleteUser(id);
+    if ('error' in r && r.error) { toast('err', r.error); return; }
+    setRows((prev) => prev.filter((r2) => r2.id !== id));
+    toast('ok', 'User deleted');
+    startTransition(() => router.refresh());
   }
 
   return (

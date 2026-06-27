@@ -6,6 +6,10 @@ import { WaterClient } from '@/components/WaterClient';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+export const metadata = {
+  title: 'Water Log — Weight Loss',
+};
+
 export default async function WaterPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');

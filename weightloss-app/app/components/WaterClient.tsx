@@ -5,13 +5,9 @@ import { useRouter } from 'next/navigation';
 import { toast } from './Providers';
 import { fmtDate, todayISO } from '@/lib/utils';
 import { Droplet } from 'lucide-react';
+import { createWater, deleteWater } from '@/lib/actions/water';
 
 type Row = { id: number; entry_date: string; amount_ml: number };
-
-function csrf() {
-  const m = document.cookie.match(/(?:^|;\s*)weightloss_csrf=([^;]+)/);
-  return m ? decodeURIComponent(m[1]) : '';
-}
 
 export function WaterClient({ initial, goalMl }: { initial: Row[]; goalMl: number }) {
   const router = useRouter();
@@ -25,15 +21,9 @@ export function WaterClient({ initial, goalMl }: { initial: Row[]; goalMl: numbe
     const n = Number(amount);
     if (!Number.isFinite(n) || n <= 0) { toast('err', 'Enter a valid amount'); return; }
     try {
-      const res = await fetch('/api/water', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'content-type': 'application/json', 'x-csrf-token': csrf() },
-        body: JSON.stringify({ entry_date: date, amount_ml: Math.round(n) })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Save failed');
-      setRows((prev) => [{ id: data.id, entry_date: date, amount_ml: Math.round(n) }, ...prev]);
+      const result = await createWater({ entry_date: date, amount_ml: Math.round(n) });
+      if (result.error) { toast('err', result.error); return; }
+      setRows((prev) => [{ id: result.id!, entry_date: date, amount_ml: Math.round(n) }, ...prev]);
       setAmount('250');
       toast('ok', 'Logged');
       startTransition(() => router.refresh());
@@ -43,15 +33,8 @@ export function WaterClient({ initial, goalMl }: { initial: Row[]; goalMl: numbe
   async function remove(id: number) {
     if (!confirm('Delete this entry?')) return;
     try {
-      const res = await fetch(`/api/water/${id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { 'x-csrf-token': csrf() }
-      });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        throw new Error(d.error || 'Delete failed');
-      }
+      const result = await deleteWater(id);
+      if (result.error) { toast('err', result.error); return; }
       setRows((prev) => prev.filter((r) => r.id !== id));
       toast('ok', 'Deleted');
       startTransition(() => router.refresh());

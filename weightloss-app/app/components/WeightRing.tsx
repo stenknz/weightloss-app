@@ -1,5 +1,3 @@
-'use client';
-
 export function WeightRing({
   currentKg, targetKg, startKg, lost, toGo
 }: {

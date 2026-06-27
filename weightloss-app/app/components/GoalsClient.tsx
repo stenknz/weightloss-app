@@ -3,11 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from './Providers';
-
-function csrf() {
-  const m = document.cookie.match(/(?:^|;\s*)weightloss_csrf=([^;]+)/);
-  return m ? decodeURIComponent(m[1]) : '';
-}
+import { updateGoals } from '@/lib/actions/goals';
 
 type Goals = {
   target_weight_kg: string | null; target_calorie_deficit: number | null;
@@ -32,20 +28,14 @@ export function GoalsClient({ initial }: { initial: Goals }) {
   async function save(e: React.FormEvent) {
     e.preventDefault();
     try {
-      const res = await fetch('/api/goals', {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'content-type': 'application/json', 'x-csrf-token': csrf() },
-        body: JSON.stringify({
-          target_weight_kg: num(tw), target_calorie_deficit: num(deficit),
-          target_date: tdate || null,
-          calorie_target: num(cal), protein_target_g: num(p),
-          carbs_target_g: num(c), fat_target_g: num(f),
-          water_target_ml: water ? Math.round(Number(water)) : null,
-        })
+      const result = await updateGoals({
+        target_weight_kg: num(tw), target_calorie_deficit: num(deficit),
+        target_date: tdate || null,
+        calorie_target: num(cal), protein_target_g: num(p),
+        carbs_target_g: num(c), fat_target_g: num(f),
+        water_target_ml: water ? Math.round(Number(water)) : null,
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Save failed');
+      if (result.error) throw new Error(result.error);
       toast('ok', 'Goals updated');
       startTransition(() => router.refresh());
     } catch (e) { toast('err', (e as Error).message); }

@@ -3,11 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from './Providers';
-
-function csrf() {
-  const m = document.cookie.match(/(?:^|;\s*)weightloss_csrf=([^;]+)/);
-  return m ? decodeURIComponent(m[1]) : '';
-}
+import { login } from '@/lib/actions/auth';
 
 export function LoginForm({ next, invite }: { next?: string; invite?: string }) {
   const router = useRouter();
@@ -19,19 +15,13 @@ export function LoginForm({ next, invite }: { next?: string; invite?: string }) 
     e.preventDefault();
     setBusy(true);
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast('err', data.error || 'Login failed');
+      const result = await login({ email, password });
+      if ('error' in result) {
+        toast('err', result.error);
         setBusy(false);
         return;
       }
-      toast('ok', `Welcome, ${data.user.name}`);
+      toast('ok', `Welcome, ${result.user.name}`);
       router.push(next || '/');
       router.refresh();
     } catch (e) {

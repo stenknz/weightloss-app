@@ -11,6 +11,7 @@ import {
 import { useTheme } from './Providers';
 import { useState } from 'react';
 import type { CurrentUser } from '@/lib/auth';
+import { logout } from '@/lib/actions/auth';
 
 export function Sidebar({ user }: { user: CurrentUser }) {
   const pathname = usePathname();
@@ -173,7 +174,7 @@ export function Sidebar({ user }: { user: CurrentUser }) {
           <button
             type="button"
             onClick={async () => {
-              await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+              await logout();
               window.location.href = '/login';
             }}
             className="btn-ghost"
@@ -307,7 +308,7 @@ function LogoutButtonSidebar() {
     <button
       type="button"
       onClick={async () => {
-        await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+        await logout();
         window.location.href = '/login';
       }}
       className="group relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-150"

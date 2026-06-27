@@ -6,16 +6,22 @@ import { parseISO, differenceInDays, subDays } from 'date-fns';
 import Link from 'next/link';
 import { Scale, Utensils, Dumbbell, Droplet, Footprints, ArrowRight } from 'lucide-react';
 import { QuickLog } from '@/components/QuickLog';
-import { WeightChart } from '@/components/WeightChart';
+import dynamicImport from 'next/dynamic';
 import { WeightRing } from '@/components/WeightRing';
-import { WaterChart } from '@/components/WaterChart';
-import { StepsChart } from '@/components/StepsChart';
-import { CalorieChart } from '@/components/CalorieChart';
-import { MacroChart } from '@/components/MacroChart';
 import type { MacroData } from '@/components/MacroChart';
+
+const WeightChart = dynamicImport(() => import('@/components/WeightChart').then(m => ({ default: m.WeightChart })), { ssr: false });
+const WaterChart = dynamicImport(() => import('@/components/WaterChart').then(m => ({ default: m.WaterChart })), { ssr: false });
+const StepsChart = dynamicImport(() => import('@/components/StepsChart').then(m => ({ default: m.StepsChart })), { ssr: false });
+const CalorieChart = dynamicImport(() => import('@/components/CalorieChart').then(m => ({ default: m.CalorieChart })), { ssr: false });
+const MacroChart = dynamicImport(() => import('@/components/MacroChart').then(m => ({ default: m.MacroChart })), { ssr: false });
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+export const metadata = {
+  title: 'Dashboard — Weight Loss',
+};
 
 async function loadDashboard(userId: number) {
   const today = todayISO();

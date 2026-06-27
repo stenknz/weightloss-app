@@ -3,11 +3,7 @@
 import { useState, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from './Providers';
-
-function csrf() {
-  const m = document.cookie.match(/(?:^|;\s*)weightloss_csrf=([^;]+)/);
-  return m ? decodeURIComponent(m[1]) : '';
-}
+import { adminGetSettings, adminUpdateSettings } from '@/lib/actions/admin';
 
 type Settings = { invite_only: boolean; app_name: string };
 
@@ -18,26 +14,18 @@ export function AdminSettingsClient() {
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
-    fetch('/api/admin/settings', { credentials: 'include' })
-      .then((r) => r.json())
-      .then((d) => { setSettings(d); setLoading(false); })
-      .catch(() => setLoading(false));
+    adminGetSettings().then((r) => {
+      if ('data' in r && r.data) { setSettings(r.data); }
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, []);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    try {
-      const res = await fetch('/api/admin/settings', {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'content-type': 'application/json', 'x-csrf-token': csrf() },
-        body: JSON.stringify(settings)
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed');
-      toast('ok', 'Settings saved');
-      startTransition(() => router.refresh());
-    } catch (e) { toast('err', (e as Error).message); }
+    const r = await adminUpdateSettings(settings);
+    if ('error' in r && r.error) { toast('err', r.error); return; }
+    toast('ok', 'Settings saved');
+    startTransition(() => router.refresh());
   }
 
   if (loading) return <div className="card text-sm text-muted">Loading…</div>;

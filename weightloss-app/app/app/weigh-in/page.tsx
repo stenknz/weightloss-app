@@ -6,6 +6,10 @@ import { WeighInClient } from '@/components/WeighInClient';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+export const metadata = {
+  title: 'Weigh-in — Weight Loss',
+};
+
 export default async function WeighInPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');

@@ -6,6 +6,10 @@ import { FoodClient } from '@/components/FoodClient';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+export const metadata = {
+  title: 'Food Log — Weight Loss',
+};
+
 export default async function FoodPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');

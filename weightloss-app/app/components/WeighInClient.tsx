@@ -5,13 +5,9 @@ import { useRouter } from 'next/navigation';
 import { toast } from './Providers';
 import { WeightChart } from './WeightChart';
 import { fmtDate, round1, todayISO } from '@/lib/utils';
+import { createWeighIn, deleteWeighIn } from '@/lib/actions/weigh-in';
 
 type Row = { id: number; entry_date: string; weight_kg: string; note: string | null };
-
-function csrf() {
-  const m = document.cookie.match(/(?:^|;\s*)weightloss_csrf=([^;]+)/);
-  return m ? decodeURIComponent(m[1]) : '';
-}
 
 export function WeighInClient({ initial, targetKg }: { initial: Row[]; targetKg: string | null }) {
   const router = useRouter();
@@ -26,18 +22,12 @@ export function WeighInClient({ initial, targetKg }: { initial: Row[]; targetKg:
     const w = Number(kg);
     if (!Number.isFinite(w) || w <= 0) { toast('err', 'Enter a valid weight'); return; }
     try {
-      const res = await fetch('/api/weigh-ins', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'content-type': 'application/json', 'x-csrf-token': csrf() },
-        body: JSON.stringify({ entry_date: date, weight_kg: w, note: note || null })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Save failed');
+      const result = await createWeighIn({ entry_date: date, weight_kg: w, note: note || null });
+      if (result.error) { toast('err', result.error); return; }
       // Update local list
       setRows((prev) => {
         const without = prev.filter((r) => r.entry_date !== date);
-        return [{ id: data.id, entry_date: date, weight_kg: String(w), note: note || null }, ...without]
+        return [{ id: result.id!, entry_date: date, weight_kg: String(w), note: note || null }, ...without]
           .sort((a, b) => b.entry_date.localeCompare(a.entry_date));
       });
       setKg(''); setNote(''); setDate(todayISO());
@@ -49,15 +39,8 @@ export function WeighInClient({ initial, targetKg }: { initial: Row[]; targetKg:
   async function remove(id: number) {
     if (!confirm('Delete this weigh-in?')) return;
     try {
-      const res = await fetch(`/api/weigh-ins/${id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { 'x-csrf-token': csrf() }
-      });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        throw new Error(d.error || 'Delete failed');
-      }
+      const result = await deleteWeighIn(id);
+      if (result.error) { toast('err', result.error); return; }
       setRows((prev) => prev.filter((r) => r.id !== id));
       toast('ok', 'Deleted');
       startTransition(() => router.refresh());

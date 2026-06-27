@@ -5,6 +5,10 @@ import { SettingsClient } from '@/components/SettingsClient';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+export const metadata = {
+  title: 'Settings — Weight Loss',
+};
+
 export default async function SettingsPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');

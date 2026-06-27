@@ -5,6 +5,10 @@ import { GoalsClient } from '@/components/GoalsClient';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+export const metadata = {
+  title: 'Goals — Weight Loss',
+};
+
 export default async function GoalsPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');

@@ -4,16 +4,12 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from './Providers';
 import { fmtDate, round0, todayISO } from '@/lib/utils';
+import { createExercise, deleteExercise } from '@/lib/actions/exercise';
 
 type Row = {
   id: number; entry_date: string; activity: string;
   duration_min: number | null; calories_burned: string | null; notes: string | null;
 };
-
-function csrf() {
-  const m = document.cookie.match(/(?:^|;\s*)weightloss_csrf=([^;]+)/);
-  return m ? decodeURIComponent(m[1]) : '';
-}
 
 export function ExerciseClient({ initial }: { initial: Row[] }) {
   const router = useRouter();
@@ -30,20 +26,14 @@ export function ExerciseClient({ initial }: { initial: Row[] }) {
     e.preventDefault();
     if (!activity.trim()) { toast('err', 'Activity is required'); return; }
     try {
-      const res = await fetch('/api/exercise', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'content-type': 'application/json', 'x-csrf-token': csrf() },
-        body: JSON.stringify({
-          entry_date: date, activity,
-          duration_min: num(duration), calories_burned: num(burned),
-          notes: notes || null
-        })
+      const result = await createExercise({
+        entry_date: date, activity,
+        duration_min: num(duration), calories_burned: num(burned),
+        notes: notes || null
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Save failed');
+      if (result.error) { toast('err', result.error); return; }
       setRows((prev) => [{
-        id: data.id, entry_date: date, activity,
+        id: result.id!, entry_date: date, activity,
         duration_min: duration ? Number(duration) : null,
         calories_burned: burned || null, notes: notes || null
       }, ...prev]);
@@ -56,15 +46,8 @@ export function ExerciseClient({ initial }: { initial: Row[] }) {
   async function remove(id: number) {
     if (!confirm('Delete this exercise entry?')) return;
     try {
-      const res = await fetch(`/api/exercise/${id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { 'x-csrf-token': csrf() }
-      });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        throw new Error(d.error || 'Delete failed');
-      }
+      const result = await deleteExercise(id);
+      if (result.error) { toast('err', result.error); return; }
       setRows((prev) => prev.filter((r) => r.id !== id));
       toast('ok', 'Deleted');
       startTransition(() => router.refresh());

@@ -6,6 +6,10 @@ import { ExerciseClient } from '@/components/ExerciseClient';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+export const metadata = {
+  title: 'Exercise — Weight Loss',
+};
+
 export default async function ExercisePage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');

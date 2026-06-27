@@ -4,17 +4,13 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from './Providers';
 import { fmtDate, round0, todayISO } from '@/lib/utils';
+import { createFood, deleteFood } from '@/lib/actions/food';
 
 type Row = {
   id: number; entry_date: string; meal: string | null; description: string;
   calories: string; protein_g: string | null; carbs_g: string | null; fat_g: string | null;
   fibre_g: string | null; sugar_g: string | null;
 };
-
-function csrf() {
-  const m = document.cookie.match(/(?:^|;\s*)weightloss_csrf=([^;]+)/);
-  return m ? decodeURIComponent(m[1]) : '';
-}
 
 export function FoodClient({ initial, targets }:
   { initial: Row[]; targets: { calories: number | null; protein: number | null; carbs: number | null; fat: number | null } }) {
@@ -38,20 +34,14 @@ export function FoodClient({ initial, targets }:
     const calN = Number(cal);
     if (!Number.isFinite(calN) || calN < 0) { toast('err', 'Enter valid calories'); return; }
     try {
-      const res = await fetch('/api/food', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'content-type': 'application/json', 'x-csrf-token': csrf() },
-        body: JSON.stringify({
-          entry_date: date, meal, description: desc, calories: calN,
-          protein_g: num(p), carbs_g: num(c), fat_g: num(f),
-          fibre_g: num(fibre), sugar_g: num(sugar),
-        })
+      const result = await createFood({
+        entry_date: date, meal, description: desc, calories: calN,
+        protein_g: num(p), carbs_g: num(c), fat_g: num(f),
+        fibre_g: num(fibre), sugar_g: num(sugar),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Save failed');
+      if (result.error) { toast('err', result.error); return; }
       const updated: Row = {
-        id: data.id, entry_date: date, meal, description: desc,
+        id: result.id!, entry_date: date, meal, description: desc,
         calories: String(calN),
         protein_g: p || null, carbs_g: c || null, fat_g: f || null,
         fibre_g: fibre || null, sugar_g: sugar || null
@@ -66,15 +56,8 @@ export function FoodClient({ initial, targets }:
   async function remove(id: number) {
     if (!confirm('Delete this food entry?')) return;
     try {
-      const res = await fetch(`/api/food/${id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { 'x-csrf-token': csrf() }
-      });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        throw new Error(d.error || 'Delete failed');
-      }
+      const result = await deleteFood(id);
+      if (result.error) { toast('err', result.error); return; }
       setRows((prev) => prev.filter((r) => r.id !== id));
       toast('ok', 'Deleted');
       startTransition(() => router.refresh());

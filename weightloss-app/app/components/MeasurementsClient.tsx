@@ -4,17 +4,13 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from './Providers';
 import { fmtDate, round1, todayISO } from '@/lib/utils';
+import { createMeasurement, deleteMeasurement } from '@/lib/actions/measurements';
 
 type Row = {
   id: number; entry_date: string;
   waist_cm: string | null; chest_cm: string | null; hips_cm: string | null;
   thigh_cm: string | null; arm_cm: string | null; note: string | null;
 };
-
-function csrf() {
-  const m = document.cookie.match(/(?:^|;\s*)weightloss_csrf=([^;]+)/);
-  return m ? decodeURIComponent(m[1]) : '';
-}
 
 export function MeasurementsClient({ initial }: { initial: Row[] }) {
   const router = useRouter();
@@ -37,20 +33,14 @@ export function MeasurementsClient({ initial }: { initial: Row[] }) {
       return;
     }
     try {
-      const res = await fetch('/api/measurements', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'content-type': 'application/json', 'x-csrf-token': csrf() },
-        body: JSON.stringify({
-          entry_date: date,
-          waist_cm: w, chest_cm: c, hips_cm: h, thigh_cm: t, arm_cm: a,
-          note: note || null
-        })
+      const result = await createMeasurement({
+        entry_date: date,
+        waist_cm: w, chest_cm: c, hips_cm: h, thigh_cm: t, arm_cm: a,
+        note: note || null
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Save failed');
+      if (result.error) throw new Error(result.error);
       const updated: Row = {
-        id: data.id, entry_date: date,
+        id: result.id!, entry_date: date,
         waist_cm: w?.toString() ?? null, chest_cm: c?.toString() ?? null,
         hips_cm: h?.toString() ?? null, thigh_cm: t?.toString() ?? null,
         arm_cm: a?.toString() ?? null, note: note || null
@@ -68,15 +58,8 @@ export function MeasurementsClient({ initial }: { initial: Row[] }) {
   async function remove(id: number) {
     if (!confirm('Delete this measurement?')) return;
     try {
-      const res = await fetch(`/api/measurements/${id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { 'x-csrf-token': csrf() }
-      });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        throw new Error(d.error || 'Delete failed');
-      }
+      const result = await deleteMeasurement(id);
+      if (result.error) throw new Error(result.error);
       setRows((prev) => prev.filter((r) => r.id !== id));
       toast('ok', 'Deleted');
       startTransition(() => router.refresh());

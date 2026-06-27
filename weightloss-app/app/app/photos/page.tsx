@@ -6,6 +6,10 @@ import { PhotosClient } from '@/components/PhotosClient';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+export const metadata = {
+  title: 'Progress Photos — Weight Loss',
+};
+
 export default async function PhotosPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');

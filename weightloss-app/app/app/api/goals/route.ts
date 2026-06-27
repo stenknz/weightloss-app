@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
-import { json, err } from '@/lib/api';
+import { z } from 'zod';
+import { json, err, validated } from '@/lib/api';
 import { query } from '@/lib/db';
 import { audit } from '@/lib/audit';
 import { getClientIp, requireUser, requireCsrf } from '@/lib/auth';
@@ -28,35 +29,27 @@ export async function PUT(request: NextRequest) {
   const csrf = await requireCsrf(request, auth.user);
   if (csrf) return csrf;
 
-  const body = await request.json().catch(() => null);
-  if (!body || typeof body !== 'object') return err('Invalid body', 400);
-  const b = body as Record<string, unknown>;
-
-  const num = (v: unknown): number | null => {
-    if (v === null || v === '' || v === undefined) return null;
-    const n = Number(v);
-    return Number.isFinite(n) ? n : null;
-  };
-  const str = (v: unknown): string | null => {
-    if (v === null || v === '' || v === undefined) return null;
-    if (typeof v !== 'string') return null;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return null;
-    return v;
-  };
-
-  const target_weight_kg       = num(b.target_weight_kg);
-  const target_calorie_deficit = num(b.target_calorie_deficit);
-  const target_date            = str(b.target_date);
-  const calorie_target         = num(b.calorie_target);
-  const protein_target_g       = num(b.protein_target_g);
-  const carbs_target_g         = num(b.carbs_target_g);
-  const fat_target_g           = num(b.fat_target_g);
-  const water_target_ml        = num(b.water_target_ml);
-
-  if (target_weight_kg != null && (target_weight_kg <= 0 || target_weight_kg > 500)) return err('Invalid target weight', 400);
-  if (target_calorie_deficit != null && (target_calorie_deficit < 0 || target_calorie_deficit > 5000)) return err('Invalid deficit', 400);
-  if (calorie_target != null && (calorie_target < 0 || calorie_target > 20000)) return err('Invalid calorie target', 400);
-  if (water_target_ml != null && (water_target_ml < 500 || water_target_ml > 15000)) return err('Invalid water target', 400);
+  const body = await validated(request, z.object({
+    target_weight_kg: z.number().positive().max(500).nullable().optional(),
+    target_calorie_deficit: z.number().min(0).max(5000).nullable().optional(),
+    target_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+    calorie_target: z.number().min(0).max(20000).nullable().optional(),
+    protein_target_g: z.number().min(0).nullable().optional(),
+    carbs_target_g: z.number().min(0).nullable().optional(),
+    fat_target_g: z.number().min(0).nullable().optional(),
+    water_target_ml: z.number().min(500).max(15000).nullable().optional(),
+  }));
+  if (!body.ok) return body.response;
+  const {
+    target_weight_kg,
+    target_calorie_deficit,
+    target_date,
+    calorie_target,
+    protein_target_g,
+    carbs_target_g,
+    fat_target_g,
+    water_target_ml,
+  } = body.data;
 
   await query(
     `UPDATE users SET
@@ -83,6 +76,6 @@ export async function PUT(request: NextRequest) {
   );
   await audit({ userId: auth.user.id, action: 'targets_update',
     targetType: 'user', targetId: auth.user.id, ip: await getClientIp(request),
-    details: b });
+    details: body.data });
   return json({ ok: true });
 }

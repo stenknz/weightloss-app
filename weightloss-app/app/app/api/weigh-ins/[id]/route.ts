@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
-import { json, err } from '@/lib/api';
+import { z } from 'zod';
+import { json, err, validated } from '@/lib/api';
 import { query } from '@/lib/db';
 import { audit } from '@/lib/audit';
 import { getClientIp, requireUser, requireCsrf } from '@/lib/auth';
@@ -28,11 +29,12 @@ export async function PUT(request: NextRequest, ctx: { params: { id: string } })
   if (csrf) return csrf;
   const id = Number.parseInt(ctx.params.id, 10);
   if (!Number.isFinite(id)) return err('Invalid id', 400);
-  const body = await request.json().catch(() => null);
-  if (!body || typeof body !== 'object') return err('Invalid body', 400);
-  const weight_kg = Number((body as { weight_kg?: unknown }).weight_kg);
-  const note = (body as { note?: unknown }).note;
-  if (!Number.isFinite(weight_kg) || weight_kg <= 0) return err('Invalid weight', 400);
+  const body = await validated(request, z.object({
+    weight_kg: z.number().positive(),
+    note: z.string().max(1000).nullable().optional(),
+  }));
+  if (!body.ok) return body.response;
+  const { weight_kg, note } = body.data;
   const r = await query(
     `UPDATE weigh_ins
         SET weight_kg = $1, note = $2

@@ -6,6 +6,10 @@ import { AdminUsersClient } from '@/components/AdminUsersClient';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+export const metadata = {
+  title: 'Users — Weight Loss',
+};
+
 export default async function AdminUsersPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');

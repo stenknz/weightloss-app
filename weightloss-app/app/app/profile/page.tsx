@@ -5,6 +5,10 @@ import { ProfileClient } from '@/components/ProfileClient';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+export const metadata = {
+  title: 'Profile — Weight Loss',
+};
+
 export default async function ProfilePage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');

@@ -3,17 +3,13 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from './Providers';
+import { updateProfile } from '@/lib/actions/profile';
 
 type User = {
   id: number; email: string; name: string; role: 'user' | 'admin' | string;
   sex: string | null; age: number | null; height_cm: string | null;
   activity_level: string | null;
 };
-
-function csrf() {
-  const m = document.cookie.match(/(?:^|;\s*)weightloss_csrf=([^;]+)/);
-  return m ? decodeURIComponent(m[1]) : '';
-}
 
 export function ProfileClient({ user }: { user: User }) {
   const router = useRouter();
@@ -33,14 +29,8 @@ export function ProfileClient({ user }: { user: User }) {
       if (height !== (user.height_cm?.toString() || '')) body.height_cm = height ? Number(height) : null;
       if (activity !== (user.activity_level || '')) body.activity_level = activity || null;
 
-      const res = await fetch('/api/profile', {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'content-type': 'application/json', 'x-csrf-token': csrf() },
-        body: JSON.stringify(body)
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Save failed');
+      const result = await updateProfile(body);
+      if (result.error) throw new Error(result.error);
       toast('ok', 'Profile updated');
       startTransition(() => router.refresh());
     } catch (e) { toast('err', (e as Error).message); }

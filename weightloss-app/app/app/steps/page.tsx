@@ -6,6 +6,10 @@ import { StepsClient } from '@/components/StepsClient';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+export const metadata = {
+  title: 'Steps — Weight Loss',
+};
+
 export default async function StepsPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');

@@ -3,13 +3,9 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from './Providers';
+import { adminCreateInvite, adminDeleteInvite } from '@/lib/actions/admin';
 
 type Row = { id: number; code: string; email: string | null; note: string | null; max_uses: number; uses: number; expires_at: Date | null; created_at: Date; created_by_email: string | null; used_by_email: string | null };
-
-function csrf() {
-  const m = document.cookie.match(/(?:^|;\s*)weightloss_csrf=([^;]+)/);
-  return m ? decodeURIComponent(m[1]) : '';
-}
 
 export function AdminInvitesClient({ initial }: { initial: Row[] }) {
   const router = useRouter();
@@ -23,43 +19,26 @@ export function AdminInvitesClient({ initial }: { initial: Row[] }) {
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
-    try {
-      const res = await fetch('/api/admin/invites', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'content-type': 'application/json', 'x-csrf-token': csrf() },
-        body: JSON.stringify({
-          email: email || null,
-          note: note || null,
-          max_uses: Math.max(1, Number(maxUses) || 1),
-          expires_in_days: expDays ? Math.max(1, Number(expDays)) : null
-        })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed');
-      setNewCode(data.code);
-      setEmail(''); setNote('');
-      toast('ok', 'Invite created');
-      startTransition(() => router.refresh());
-    } catch (e) { toast('err', (e as Error).message); }
+    const r = await adminCreateInvite({
+      email: email || null,
+      note: note || null,
+      max_uses: Math.max(1, Number(maxUses) || 1),
+      expires_in_days: expDays ? Math.max(1, Number(expDays)) : null
+    });
+    if ('error' in r && r.error) { toast('err', r.error); return; }
+    if ('data' in r && r.data) { setNewCode(r.data.code); }
+    setEmail(''); setNote('');
+    toast('ok', 'Invite created');
+    startTransition(() => router.refresh());
   }
 
   async function remove(id: number) {
     if (!confirm('Delete this invite?')) return;
-    try {
-      const res = await fetch(`/api/admin/invites/${id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { 'x-csrf-token': csrf() }
-      });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        throw new Error(d.error || 'Delete failed');
-      }
-      setRows((prev) => prev.filter((r) => r.id !== id));
-      toast('ok', 'Deleted');
-      startTransition(() => router.refresh());
-    } catch (e) { toast('err', (e as Error).message); }
+    const r = await adminDeleteInvite(id);
+    if ('error' in r && r.error) { toast('err', r.error); return; }
+    setRows((prev) => prev.filter((r2) => r2.id !== id));
+    toast('ok', 'Deleted');
+    startTransition(() => router.refresh());
   }
 
   return (

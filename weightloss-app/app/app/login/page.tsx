@@ -6,6 +6,10 @@ import { LoginForm } from '@/components/LoginForm';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+export const metadata = {
+  title: 'Login — Weight Loss',
+};
+
 export default async function LoginPage({ searchParams }: { searchParams: { next?: string; invite?: string } }) {
   const user = await getCurrentUser();
   if (user) redirect('/');

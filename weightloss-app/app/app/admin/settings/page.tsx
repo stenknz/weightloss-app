@@ -5,6 +5,10 @@ import { AdminSettingsClient } from '@/components/AdminSettingsClient';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+export const metadata = {
+  title: 'Admin Settings — Weight Loss',
+};
+
 export default async function AdminSettingsPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');

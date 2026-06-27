@@ -5,6 +5,10 @@ import { RegisterForm } from '@/components/RegisterForm';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+export const metadata = {
+  title: 'Join — Weight Loss',
+};
+
 export default async function InvitePage({ params }: { params: { code: string } }) {
   const code = decodeURIComponent(params.code || '').toUpperCase();
   const r = await query<{

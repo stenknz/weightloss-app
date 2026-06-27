@@ -6,6 +6,10 @@ import { MeasurementsClient } from '@/components/MeasurementsClient';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+export const metadata = {
+  title: 'Measurements — Weight Loss',
+};
+
 export default async function MeasurementsPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');

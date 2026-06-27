@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from './Providers';
+import { register } from '@/lib/actions/auth';
 
 export function RegisterForm({ inviteCode }: { inviteCode?: string }) {
   const router = useRouter();
@@ -17,15 +18,9 @@ export function RegisterForm({ inviteCode }: { inviteCode?: string }) {
     if (password.length < 10) { toast('err', 'Password must be at least 10 characters'); return; }
     setBusy(true);
     try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ name, email, password, invite_code: code })
-      });
-      const data = await res.json();
-      if (!res.ok) { toast('err', data.error || 'Registration failed'); setBusy(false); return; }
-      toast('ok', `Account created for ${data.user.name}`);
+      const result = await register({ name, email, password, invite_code: code });
+      if ('error' in result) { toast('err', result.error); setBusy(false); return; }
+      toast('ok', `Account created for ${result.user.name}`);
       router.push('/');
       router.refresh();
     } catch (e) {

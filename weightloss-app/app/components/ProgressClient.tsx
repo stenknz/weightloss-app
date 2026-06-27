@@ -1,5 +1,3 @@
-'use client';
-
 import { WeightChart } from './WeightChart';
 import { MeasureChart } from './MeasureChart';
 import type { WeightPoint } from './WeightChart';

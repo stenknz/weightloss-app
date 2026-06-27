@@ -4,6 +4,12 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from './Providers';
 import { Scale, Utensils, Dumbbell, Droplet, Footprints, NotebookText } from 'lucide-react';
+import { createFood } from '@/lib/actions/food';
+import { createWater } from '@/lib/actions/water';
+import { createWeighIn } from '@/lib/actions/weigh-in';
+import { createExercise } from '@/lib/actions/exercise';
+import { createSteps } from '@/lib/actions/steps';
+import { createNote } from '@/lib/actions/notes';
 
 type Tab = 'weight' | 'food' | 'exercise' | 'water' | 'steps' | 'note';
 
@@ -47,23 +53,6 @@ function TabBtn({ current, value, Icon, label, onSelect }:
   );
 }
 
-function csrf() {
-  const m = document.cookie.match(/(?:^|;\s*)weightloss_csrf=([^;]+)/);
-  return m ? decodeURIComponent(m[1]) : '';
-}
-
-async function postJSON(url: string, body: unknown) {
-  const res = await fetch(url, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'content-type': 'application/json', 'x-csrf-token': csrf() },
-    body: JSON.stringify(body)
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || 'Request failed');
-  return data;
-}
-
 function WeightForm({ date, pending, onSaved }: any) {
   const [kg, setKg] = useState('');
   const [note, setNote] = useState('');
@@ -75,7 +64,8 @@ function WeightForm({ date, pending, onSaved }: any) {
         const w = Number(kg);
         if (!Number.isFinite(w) || w <= 0) { toast('err', 'Enter a valid weight'); return; }
         try {
-          await postJSON('/api/weigh-ins', { entry_date: date, weight_kg: w, note: note || null });
+          const result = await createWeighIn({ entry_date: date, weight_kg: w, note: note || null });
+          if (result.error) { toast('err', result.error); return; }
           setKg(''); setNote('');
           toast('ok', 'Weigh-in saved');
           onSaved();
@@ -118,11 +108,12 @@ function FoodForm({ date, pending, onSaved }: any) {
         const calN = Number(cal);
         if (!Number.isFinite(calN) || calN < 0) { toast('err', 'Enter valid calories'); return; }
         try {
-          await postJSON('/api/food', {
+          const result = await createFood({
             entry_date: date, meal, description: desc, calories: calN,
             protein_g: num(p), carbs_g: num(c), fat_g: num(f),
             fibre_g: num(fibre), sugar_g: num(sugar),
           });
+          if (result.error) { toast('err', result.error); return; }
           setDesc(''); setCal(''); setP(''); setC(''); setF(''); setFibre(''); setSugar('');
           toast('ok', 'Food entry saved');
           onSaved();
@@ -186,12 +177,13 @@ function ExerciseForm({ date, pending, onSaved }: any) {
         if (!activity.trim()) { toast('err', 'Activity is required'); return; }
         const num = (v: string) => v === '' ? null : Number(v);
         try {
-          await postJSON('/api/exercise', {
+          const result = await createExercise({
             entry_date: date, activity,
             duration_min: num(duration),
             calories_burned: num(burned),
             notes: notes || null
           });
+          if (result.error) { toast('err', result.error); return; }
           setActivity(''); setDuration(''); setBurned(''); setNotes('');
           toast('ok', 'Exercise saved');
           onSaved();
@@ -231,7 +223,8 @@ function WaterForm({ date, pending, onSaved }: any) {
         const n = Number(ml);
         if (!Number.isFinite(n) || n <= 0) { toast('err', 'Enter a valid amount'); return; }
         try {
-          await postJSON('/api/water', { entry_date: date, amount_ml: Math.round(n) });
+          const result = await createWater({ entry_date: date, amount_ml: Math.round(n) });
+          if (result.error) { toast('err', result.error); return; }
           setMl('250');
           toast('ok', 'Water logged');
           onSaved();
@@ -262,7 +255,8 @@ function StepsForm({ date, pending, onSaved }: any) {
         const n = Number(steps);
         if (!Number.isFinite(n) || n < 0) { toast('err', 'Enter a valid step count'); return; }
         try {
-          await postJSON('/api/steps', { entry_date: date, steps: Math.round(n) });
+          const result = await createSteps({ entry_date: date, steps: Math.round(n) });
+          if (result.error) { toast('err', result.error); return; }
           setSteps('');
           toast('ok', 'Steps saved');
           onSaved();
@@ -288,7 +282,8 @@ function NoteForm({ date, pending, onSaved }: any) {
         e.preventDefault();
         if (!body.trim()) { toast('err', 'Note cannot be empty'); return; }
         try {
-          await postJSON('/api/notes', { entry_date: date, body });
+          const r = await createNote({ entry_date: date, body });
+          if (r.error) throw new Error(r.error);
           setBody('');
           toast('ok', 'Note saved');
           onSaved();

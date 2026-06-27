@@ -4,13 +4,9 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from './Providers';
 import { fmtDate, todayISO } from '@/lib/utils';
+import { createNote, deleteNote } from '@/lib/actions/notes';
 
 type Row = { id: number; entry_date: string; body: string; updated_at: Date };
-
-function csrf() {
-  const m = document.cookie.match(/(?:^|;\s*)weightloss_csrf=([^;]+)/);
-  return m ? decodeURIComponent(m[1]) : '';
-}
 
 export function NotesClient({ initial }: { initial: Row[] }) {
   const router = useRouter();
@@ -24,16 +20,10 @@ export function NotesClient({ initial }: { initial: Row[] }) {
     e.preventDefault();
     if (!body.trim()) { toast('err', 'Note cannot be empty'); return; }
     try {
-      const res = await fetch('/api/notes', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'content-type': 'application/json', 'x-csrf-token': csrf() },
-        body: JSON.stringify({ entry_date: date, body })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Save failed');
+      const result = await createNote({ entry_date: date, body });
+      if (result.error) throw new Error(result.error);
       const updated: Row = {
-        id: data.id, entry_date: date, body, updated_at: new Date()
+        id: result.id!, entry_date: date, body, updated_at: new Date()
       };
       setRows((prev) => {
         const without = prev.filter((r) => r.entry_date !== date);
@@ -48,15 +38,8 @@ export function NotesClient({ initial }: { initial: Row[] }) {
   async function remove(id: number) {
     if (!confirm('Delete this note?')) return;
     try {
-      const res = await fetch(`/api/notes/${id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { 'x-csrf-token': csrf() }
-      });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        throw new Error(d.error || 'Delete failed');
-      }
+      const result = await deleteNote(id);
+      if (result.error) throw new Error(result.error);
       setRows((prev) => prev.filter((r) => r.id !== id));
       toast('ok', 'Deleted');
       startTransition(() => router.refresh());

@@ -5,13 +5,9 @@ import { useRouter } from 'next/navigation';
 import { toast } from './Providers';
 import { fmtDate, todayISO } from '@/lib/utils';
 import { Footprints } from 'lucide-react';
+import { createSteps, deleteSteps } from '@/lib/actions/steps';
 
 type Row = { id: number; entry_date: string; steps: number };
-
-function csrf() {
-  const m = document.cookie.match(/(?:^|;\s*)weightloss_csrf=([^;]+)/);
-  return m ? decodeURIComponent(m[1]) : '';
-}
 
 export function StepsClient({ initial }: { initial: Row[] }) {
   const router = useRouter();
@@ -25,17 +21,11 @@ export function StepsClient({ initial }: { initial: Row[] }) {
     const n = Number(steps);
     if (!Number.isFinite(n) || n < 0) { toast('err', 'Enter a valid step count'); return; }
     try {
-      const res = await fetch('/api/steps', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'content-type': 'application/json', 'x-csrf-token': csrf() },
-        body: JSON.stringify({ entry_date: date, steps: Math.round(n) })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Save failed');
+      const result = await createSteps({ entry_date: date, steps: Math.round(n) });
+      if (result.error) { toast('err', result.error); return; }
       setRows((prev) => {
         const without = prev.filter((r) => r.entry_date !== date);
-        return [{ id: data.id, entry_date: date, steps: Math.round(n) }, ...without]
+        return [{ id: result.id!, entry_date: date, steps: Math.round(n) }, ...without]
           .sort((a, b) => b.entry_date.localeCompare(a.entry_date));
       });
       setSteps('');
@@ -47,15 +37,8 @@ export function StepsClient({ initial }: { initial: Row[] }) {
   async function remove(id: number) {
     if (!confirm('Delete this step entry?')) return;
     try {
-      const res = await fetch(`/api/steps/${id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { 'x-csrf-token': csrf() }
-      });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        throw new Error(d.error || 'Delete failed');
-      }
+      const result = await deleteSteps(id);
+      if (result.error) { toast('err', result.error); return; }
       setRows((prev) => prev.filter((r) => r.id !== id));
       toast('ok', 'Deleted');
       startTransition(() => router.refresh());

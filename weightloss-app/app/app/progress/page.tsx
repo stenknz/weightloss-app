@@ -6,6 +6,10 @@ import { ProgressClient } from '@/components/ProgressClient';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+export const metadata = {
+  title: 'Progress — Weight Loss',
+};
+
 export default async function ProgressPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');

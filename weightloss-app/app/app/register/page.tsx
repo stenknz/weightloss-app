@@ -6,6 +6,10 @@ import { RegisterForm } from '@/components/RegisterForm';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+export const metadata = {
+  title: 'Register — Weight Loss',
+};
+
 export default async function RegisterPage({ searchParams }: { searchParams: { code?: string } }) {
   const user = await getCurrentUser();
   if (user) redirect('/');

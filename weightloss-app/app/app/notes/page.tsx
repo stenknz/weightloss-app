@@ -6,6 +6,10 @@ import { NotesClient } from '@/components/NotesClient';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+export const metadata = {
+  title: 'Notes — Weight Loss',
+};
+
 export default async function NotesPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');

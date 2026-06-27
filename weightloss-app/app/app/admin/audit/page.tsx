@@ -6,6 +6,10 @@ import { fmtDateTime } from '@/lib/utils';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+export const metadata = {
+  title: 'Audit Log — Weight Loss',
+};
+
 export default async function AdminAuditPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');

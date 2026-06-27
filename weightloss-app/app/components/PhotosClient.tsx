@@ -2,19 +2,16 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { toast } from './Providers';
 import { fmtDate, todayISO } from '@/lib/utils';
+import { createPhoto, deletePhoto } from '@/lib/actions/photos';
 
 type Row = {
   id: number; entry_date: string; filename: string;
   original_name: string | null; mime_type: string | null;
   size_bytes: number; caption: string | null;
 };
-
-function csrf() {
-  const m = document.cookie.match(/(?:^|;\s*)weightloss_csrf=([^;]+)/);
-  return m ? decodeURIComponent(m[1]) : '';
-}
 
 export function PhotosClient({ initial, maxMb }: { initial: Row[]; maxMb: number }) {
   const router = useRouter();
@@ -35,18 +32,12 @@ export function PhotosClient({ initial, maxMb }: { initial: Row[]; maxMb: number
       fd.append('file', file);
       fd.append('date', date);
       if (caption) fd.append('caption', caption);
-      const res = await fetch('/api/photos', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'x-csrf-token': csrf() },
-        body: fd
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Upload failed');
+      const result = await createPhoto(fd);
+      if (result.error) throw new Error(result.error);
       setRows((prev) => [{
-        id: data.id, entry_date: date, filename: data.filename,
+        id: result.id!, entry_date: date, filename: result.filename!,
         original_name: file.name, mime_type: file.type,
-        size_bytes: data.size, caption: caption || null
+        size_bytes: result.size!, caption: caption || null
       }, ...prev]);
       setFile(null); setCaption('');
       toast('ok', 'Uploaded');
@@ -61,15 +52,8 @@ export function PhotosClient({ initial, maxMb }: { initial: Row[]; maxMb: number
   async function remove(id: number) {
     if (!confirm('Delete this photo?')) return;
     try {
-      const res = await fetch(`/api/photos/${id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { 'x-csrf-token': csrf() }
-      });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        throw new Error(d.error || 'Delete failed');
-      }
+      const result = await deletePhoto(id);
+      if (result.error) throw new Error(result.error);
       setRows((prev) => prev.filter((r) => r.id !== id));
       toast('ok', 'Deleted');
       startTransition(() => router.refresh());
@@ -118,11 +102,13 @@ export function PhotosClient({ initial, maxMb }: { initial: Row[]; maxMb: number
               {byDate.get(d)!.map((p) => (
                 <div key={p.id} className="card-tight">
                   <a href={`/api/photos/${p.id}/file`} target="_blank" rel="noreferrer">
-                    <img
+                    <Image
                       src={`/api/photos/${p.id}/file`}
                       alt={p.caption || p.original_name || 'photo'}
+                      width={800}
+                      height={600}
                       className="w-full h-32 object-cover rounded"
-                      loading="lazy"
+                      unoptimized
                     />
                   </a>
                   {p.caption && <div className="text-xs mt-1 text-muted truncate">{p.caption}</div>}

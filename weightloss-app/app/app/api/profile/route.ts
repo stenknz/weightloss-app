@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
-import { json, err } from '@/lib/api';
+import { z } from 'zod';
+import { json, err, validated } from '@/lib/api';
 import { query } from '@/lib/db';
 import { audit } from '@/lib/audit';
 import { getClientIp, requireUser, requireCsrf } from '@/lib/auth';
@@ -31,34 +32,23 @@ export async function PUT(request: NextRequest) {
   if (auth instanceof Response) return auth;
   const csrf = await requireCsrf(request, auth.user);
   if (csrf) return csrf;
-  const body = await request.json().catch(() => null);
-  if (!body || typeof body !== 'object') return err('Invalid body', 400);
-  const b = body as Record<string, unknown>;
+  const body = await validated(request, z.object({
+    name: z.string().min(1).max(120).nullable().optional(),
+    sex: z.enum(['male', 'female', 'other', '']).nullable().optional(),
+    activity_level: z.enum(['', 'sedentary', 'light', 'moderate', 'active', 'very_active']).nullable().optional(),
+    age: z.number().int().min(0).max(130).nullable().optional(),
+    height_cm: z.number().positive().max(300).nullable().optional(),
+    target_weight_kg: z.number().positive().max(500).nullable().optional(),
+  }));
+  if (!body.ok) return body.response;
+  const b = body.data;
 
-  const num = (v: unknown): number | null => {
-    if (v === null || v === '' || v === undefined) return null;
-    const n = Number(v);
-    return Number.isFinite(n) ? n : null;
-  };
-  const str = (v: unknown, max: number): string | null => {
-    if (v === null || v === '' || v === undefined) return null;
-    if (typeof v !== 'string') return null;
-    return v.slice(0, max);
-  };
-
-  const name     = str(b.name, 120);
-  const sex      = str(b.sex, 16);
-  const activity = str(b.activity_level, 32);
-  const age            = num(b.age);
-  const height_cm      = num(b.height_cm);
-  const target_weight  = num(b.target_weight_kg);
-
-  if (name !== null && name.length < 1) return err('Name cannot be empty', 400);
-  if (sex !== null && !['male','female','other',''].includes(sex)) return err('Invalid sex', 400);
-  if (activity !== null && !['','sedentary','light','moderate','active','very_active'].includes(activity)) return err('Invalid activity level', 400);
-  if (age !== null && (age < 0 || age > 130)) return err('Invalid age', 400);
-  if (height_cm !== null && (height_cm <= 0 || height_cm > 300)) return err('Invalid height', 400);
-  if (target_weight !== null && (target_weight <= 0 || target_weight > 500)) return err('Invalid target weight', 400);
+  const name     = b.name ?? null;
+  const sex      = b.sex ?? null;
+  const activity = b.activity_level ?? null;
+  const age      = b.age ?? null;
+  const height_cm      = b.height_cm ?? null;
+  const target_weight  = b.target_weight_kg ?? null;
 
   // Build dynamic SET
   const sets: string[] = [];

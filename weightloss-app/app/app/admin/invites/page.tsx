@@ -6,6 +6,10 @@ import { AdminInvitesClient } from '@/components/AdminInvitesClient';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+export const metadata = {
+  title: 'Invites — Weight Loss',
+};
+
 export default async function AdminInvitesPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');

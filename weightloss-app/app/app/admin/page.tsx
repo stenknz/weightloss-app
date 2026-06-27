@@ -6,6 +6,10 @@ import { ShieldCheck, Users, Key, HardDrive, ScrollText, Settings2 } from 'lucid
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+export const metadata = {
+  title: 'Admin — Weight Loss',
+};
+
 export default async function AdminPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
