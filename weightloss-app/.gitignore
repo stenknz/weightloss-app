@@ -19,3 +19,4 @@ backups/
 db/
 logs/
 env/.env
+docker-compose.portainer.yml
