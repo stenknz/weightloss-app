@@ -13,7 +13,7 @@ function csrf() {
   return m ? decodeURIComponent(m[1]) : '';
 }
 
-export function WaterClient({ initial }: { initial: Row[] }) {
+export function WaterClient({ initial, goalMl }: { initial: Row[]; goalMl: number }) {
   const router = useRouter();
   const [rows, setRows] = useState<Row[]>(initial);
   const [date, setDate] = useState(todayISO());
@@ -62,8 +62,7 @@ export function WaterClient({ initial }: { initial: Row[] }) {
   const byDate = new Map<string, number>();
   for (const r of rows) byDate.set(r.entry_date, (byDate.get(r.entry_date) || 0) + r.amount_ml);
   const todayTotal = byDate.get(todayISO()) || 0;
-  const goal = 2000;
-  const pct = Math.min(100, Math.round((todayTotal / goal) * 100));
+  const pct = Math.round((todayTotal / goalMl) * 100);
 
   return (
     <div className="space-y-3">
@@ -87,7 +86,7 @@ export function WaterClient({ initial }: { initial: Row[] }) {
       <div className="card">
         <div className="flex items-center gap-2">
           <Droplet size={18} className="text-accent" />
-          <span className="text-sm">Today: <span className="font-semibold">{(todayTotal / 1000).toFixed(2)} L</span> / 2.0 L</span>
+          <span className="text-sm"><span className="font-semibold">{(todayTotal / 1000).toFixed(2)} L consumed</span> &middot; Goal: {(goalMl / 1000).toFixed(1)} L</span>
         </div>
         <div className="h-2 mt-2 bg-border rounded-full overflow-hidden">
           <div className="h-full bg-accent" style={{ width: `${pct}%` }} />

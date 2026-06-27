@@ -14,7 +14,8 @@ export async function GET(request: NextRequest) {
     `SELECT target_weight_kg::text AS target_weight_kg,
             target_calorie_deficit,
             to_char(target_date, 'YYYY-MM-DD') AS target_date,
-            calorie_target, protein_target_g, carbs_target_g, fat_target_g
+            calorie_target, protein_target_g, carbs_target_g, fat_target_g,
+            water_target_ml
        FROM users WHERE id = $1`,
     [auth.user.id]
   );
@@ -50,10 +51,12 @@ export async function PUT(request: NextRequest) {
   const protein_target_g       = num(b.protein_target_g);
   const carbs_target_g         = num(b.carbs_target_g);
   const fat_target_g           = num(b.fat_target_g);
+  const water_target_ml        = num(b.water_target_ml);
 
   if (target_weight_kg != null && (target_weight_kg <= 0 || target_weight_kg > 500)) return err('Invalid target weight', 400);
   if (target_calorie_deficit != null && (target_calorie_deficit < 0 || target_calorie_deficit > 5000)) return err('Invalid deficit', 400);
   if (calorie_target != null && (calorie_target < 0 || calorie_target > 20000)) return err('Invalid calorie target', 400);
+  if (water_target_ml != null && (water_target_ml < 500 || water_target_ml > 15000)) return err('Invalid water target', 400);
 
   await query(
     `UPDATE users SET
@@ -63,8 +66,9 @@ export async function PUT(request: NextRequest) {
        calorie_target         = $4,
        protein_target_g       = $5,
        carbs_target_g         = $6,
-       fat_target_g           = $7
-     WHERE id = $8`,
+       fat_target_g           = $7,
+       water_target_ml        = $8
+     WHERE id = $9`,
     [
       target_weight_kg,
       target_calorie_deficit,
@@ -73,6 +77,7 @@ export async function PUT(request: NextRequest) {
       protein_target_g,
       carbs_target_g,
       fat_target_g,
+      water_target_ml,
       auth.user.id
     ]
   );

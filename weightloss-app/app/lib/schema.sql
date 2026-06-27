@@ -194,3 +194,9 @@ CREATE TRIGGER users_touch BEFORE UPDATE ON users
 DROP TRIGGER IF EXISTS daily_notes_touch ON daily_notes;
 CREATE TRIGGER daily_notes_touch BEFORE UPDATE ON daily_notes
   FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS water_target_ml INTEGER NOT NULL DEFAULT 2700;
+UPDATE users SET water_target_ml = 3700 WHERE sex = 'male' AND water_target_ml = 2700;
+
+ALTER TABLE food_logs ADD COLUMN IF NOT EXISTS fibre_g NUMERIC(6,1) CHECK (fibre_g IS NULL OR fibre_g >= 0);
+ALTER TABLE food_logs ADD COLUMN IF NOT EXISTS sugar_g NUMERIC(6,1) CHECK (sugar_g IS NULL OR sugar_g >= 0);

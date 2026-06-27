@@ -13,6 +13,7 @@ type Goals = {
   target_weight_kg: string | null; target_calorie_deficit: number | null;
   target_date: string | null; calorie_target: number | null;
   protein_target_g: number | null; carbs_target_g: number | null; fat_target_g: number | null;
+  water_target_ml: number | null;
 };
 
 export function GoalsClient({ initial }: { initial: Goals }) {
@@ -24,6 +25,7 @@ export function GoalsClient({ initial }: { initial: Goals }) {
   const [p, setP] = useState(initial.protein_target_g?.toString() || '');
   const [c, setC] = useState(initial.carbs_target_g?.toString() || '');
   const [f, setF] = useState(initial.fat_target_g?.toString() || '');
+  const [water, setWater] = useState(initial.water_target_ml?.toString() || '');
   const [pending, startTransition] = useTransition();
   const num = (v: string) => v === '' ? null : Number(v);
 
@@ -38,7 +40,8 @@ export function GoalsClient({ initial }: { initial: Goals }) {
           target_weight_kg: num(tw), target_calorie_deficit: num(deficit),
           target_date: tdate || null,
           calorie_target: num(cal), protein_target_g: num(p),
-          carbs_target_g: num(c), fat_target_g: num(f)
+          carbs_target_g: num(c), fat_target_g: num(f),
+          water_target_ml: water ? Math.round(Number(water)) : null,
         })
       });
       const data = await res.json();
@@ -70,6 +73,10 @@ export function GoalsClient({ initial }: { initial: Goals }) {
       </label>
       <label className="block"><span className="label">Fat (g)</span>
         <input className="input" type="number" min="0" max="500" value={f} onChange={(e) => setF(e.target.value)} />
+      </label>
+      <label className="block"><span className="label">Water target (L)</span>
+        <input className="input" type="number" min="0.5" max="15" step="0.1"
+          value={Number(water) / 1000 || ''} onChange={(e) => setWater(e.target.value ? String(Math.round(Number(e.target.value) * 1000)) : '')} />
       </label>
       <div className="col-span-2 sm:col-span-4">
         <button className="btn-primary" disabled={pending}>Save goals</button>

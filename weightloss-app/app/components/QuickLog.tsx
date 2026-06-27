@@ -106,6 +106,8 @@ function FoodForm({ date, pending, onSaved }: any) {
   const [p, setP] = useState('');
   const [c, setC] = useState('');
   const [f, setF] = useState('');
+  const [fibre, setFibre] = useState('');
+  const [sugar, setSugar] = useState('');
   const num = (v: string) => v === '' ? null : Number(v);
   return (
     <form
@@ -118,9 +120,10 @@ function FoodForm({ date, pending, onSaved }: any) {
         try {
           await postJSON('/api/food', {
             entry_date: date, meal, description: desc, calories: calN,
-            protein_g: num(p), carbs_g: num(c), fat_g: num(f)
+            protein_g: num(p), carbs_g: num(c), fat_g: num(f),
+            fibre_g: num(fibre), sugar_g: num(sugar),
           });
-          setDesc(''); setCal(''); setP(''); setC(''); setF('');
+          setDesc(''); setCal(''); setP(''); setC(''); setF(''); setFibre(''); setSugar('');
           toast('ok', 'Food entry saved');
           onSaved();
         } catch (e) { toast('err', (e as Error).message); }
@@ -154,6 +157,14 @@ function FoodForm({ date, pending, onSaved }: any) {
       <label className="block">
         <span className="label">F (g)</span>
         <input className="input" type="number" min="0" step="0.1" value={f} onChange={(e) => setF(e.target.value)} />
+      </label>
+      <label className="block">
+        <span className="label">Fibre (g)</span>
+        <input className="input" type="number" min="0" step="0.1" value={fibre} onChange={(e) => setFibre(e.target.value)} />
+      </label>
+      <label className="block">
+        <span className="label">Sugar (g)</span>
+        <input className="input" type="number" min="0" step="0.1" value={sugar} onChange={(e) => setSugar(e.target.value)} />
       </label>
       <div className="col-span-2 sm:col-span-6">
         <button className="btn-primary" disabled={pending}>Save food entry</button>

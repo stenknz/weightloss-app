@@ -181,7 +181,9 @@ async function main() {
           calories: cal,
           protein_g: Math.round(cal * 0.3 / 4),
           carbs_g:   Math.round(cal * 0.4 / 4),
-          fat_g:     Math.round(cal * 0.3 / 9)
+          fat_g:     Math.round(cal * 0.3 / 9),
+          fibre_g:   Math.round(rand(5, 30) * 10) / 10,
+          sugar_g:   Math.round(rand(5, 40) * 10) / 10
         });
       }
 

@@ -20,11 +20,14 @@ export async function GET(request: NextRequest) {
   // Today's totals
   const todayFood = await query<{
     calories: string | null; protein_g: string | null; carbs_g: string | null; fat_g: string | null;
+    fibre_g: string | null; sugar_g: string | null;
   }>(
     `SELECT COALESCE(SUM(calories),  0)::text AS calories,
             COALESCE(SUM(protein_g), 0)::text AS protein_g,
             COALESCE(SUM(carbs_g),   0)::text AS carbs_g,
-            COALESCE(SUM(fat_g),     0)::text AS fat_g
+            COALESCE(SUM(fat_g),     0)::text AS fat_g,
+            COALESCE(SUM(fibre_g),   0)::text AS fibre_g,
+            COALESCE(SUM(sugar_g),   0)::text AS sugar_g
        FROM food_logs WHERE user_id = $1 AND entry_date = $2`,
     [userId, today]
   );
@@ -130,11 +133,13 @@ export async function GET(request: NextRequest) {
     protein_target_g: number | null;
     carbs_target_g: number | null;
     fat_target_g: number | null;
+    water_target_ml: number | null;
   }>(
     `SELECT target_weight_kg::text AS target_weight_kg,
             target_calorie_deficit,
             to_char(target_date, 'YYYY-MM-DD') AS target_date,
-            calorie_target, protein_target_g, carbs_target_g, fat_target_g
+            calorie_target, protein_target_g, carbs_target_g, fat_target_g,
+            water_target_ml
        FROM users WHERE id = $1`,
     [userId]
   );
@@ -146,6 +151,8 @@ export async function GET(request: NextRequest) {
       protein_g:     Number(todayFood.rows[0]?.protein_g  || 0),
       carbs_g:       Number(todayFood.rows[0]?.carbs_g    || 0),
       fat_g:         Number(todayFood.rows[0]?.fat_g      || 0),
+      fibre_g:       Number(todayFood.rows[0]?.fibre_g    || 0),
+      sugar_g:       Number(todayFood.rows[0]?.sugar_g    || 0),
       calories_burned: Number(todayExercise.rows[0]?.burned || 0),
       water_ml:      Number(todayWater.rows[0]?.ml || 0),
       steps:         Number(todaySteps.rows[0]?.steps || 0)

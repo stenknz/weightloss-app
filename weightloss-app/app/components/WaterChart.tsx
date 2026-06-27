@@ -4,12 +4,11 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLin
 
 export type WaterPoint = { date: string; ml: number };
 
-export function WaterChart({ data, days = 7 }: { data: WaterPoint[]; days?: number }) {
+export function WaterChart({ data, days = 7, goalMl = 2700 }: { data: WaterPoint[]; days?: number; goalMl?: number }) {
   if (!data || data.length === 0) {
     return <div className="text-sm py-8 text-center" style={{ color: 'rgb(var(--muted))' }}>No water data yet.</div>;
   }
   const displayData = data.slice(-days);
-  const goalMl = 2000;
   return (
     <div className="h-48 w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -55,7 +54,7 @@ export function WaterChart({ data, days = 7 }: { data: WaterPoint[]; days?: numb
             stroke="rgb(var(--warn))"
             strokeDasharray="3 3"
             strokeOpacity={0.5}
-            label={{ value: '2L', position: 'right', fill: 'rgb(var(--warn))', fontSize: 9 }}
+            label={{ value: `${(goalMl / 1000).toFixed(1)}L`, position: 'right', fill: 'rgb(var(--warn))', fontSize: 9 }}
           />
         </BarChart>
       </ResponsiveContainer>

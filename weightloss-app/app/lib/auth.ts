@@ -18,6 +18,7 @@ export type CurrentUser = SessionUser & {
   protein_target_g: number | null;
   carbs_target_g: number | null;
   fat_target_g: number | null;
+  water_target_ml: number;
   photo_storage_used_bytes: number;
 };
 
@@ -30,6 +31,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
             target_weight_kg::text AS target_weight_kg, target_calorie_deficit,
             to_char(target_date, 'YYYY-MM-DD') AS target_date,
             calorie_target, protein_target_g, carbs_target_g, fat_target_g,
+            water_target_ml,
             photo_storage_used_bytes
        FROM users
       WHERE id = $1`,

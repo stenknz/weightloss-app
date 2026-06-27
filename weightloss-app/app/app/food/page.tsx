@@ -12,7 +12,8 @@ export default async function FoodPage() {
   const r = await query<any>(
     `SELECT id, entry_date::text AS entry_date, meal, description,
             calories::text AS calories, protein_g::text AS protein_g,
-            carbs_g::text   AS carbs_g,   fat_g::text   AS fat_g
+            carbs_g::text   AS carbs_g,   fat_g::text   AS fat_g,
+          fibre_g::text AS fibre_g, sugar_g::text AS sugar_g
        FROM food_logs WHERE user_id = $1
        ORDER BY entry_date DESC, created_at DESC LIMIT 200`,
     [user.id]

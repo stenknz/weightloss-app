@@ -18,7 +18,8 @@ export default async function GoalsPage() {
         calorie_target:         user.calorie_target,
         protein_target_g:       user.protein_target_g,
         carbs_target_g:         user.carbs_target_g,
-        fat_target_g:           user.fat_target_g
+        fat_target_g:           user.fat_target_g,
+        water_target_ml:        user.water_target_ml
       }} />
     </div>
   );

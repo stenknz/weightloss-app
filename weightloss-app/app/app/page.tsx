@@ -30,11 +30,13 @@ async function loadDashboard(userId: number) {
          FROM weigh_ins WHERE user_id = $1 ORDER BY entry_date DESC LIMIT 1`,
       [userId]
     ),
-    query<{ calories: string | null; protein_g: string | null; carbs_g: string | null; fat_g: string | null }>(
+    query<{ calories: string | null; protein_g: string | null; carbs_g: string | null; fat_g: string | null; fibre_g: string | null; sugar_g: string | null }>(
       `SELECT COALESCE(SUM(calories),0)::text AS calories,
               COALESCE(SUM(protein_g),0)::text AS protein_g,
               COALESCE(SUM(carbs_g),0)::text AS carbs_g,
-              COALESCE(SUM(fat_g),0)::text AS fat_g
+              COALESCE(SUM(fat_g),0)::text AS fat_g,
+              COALESCE(SUM(fibre_g),0)::text AS fibre_g,
+              COALESCE(SUM(sugar_g),0)::text AS sugar_g
          FROM food_logs WHERE user_id = $1 AND entry_date = $2`,
       [userId, today]
     ),
@@ -157,6 +159,8 @@ async function loadDashboard(userId: number) {
       protein_g: Number(todayFood.rows[0]?.protein_g || 0),
       carbs_g:   Number(todayFood.rows[0]?.carbs_g || 0),
       fat_g:     Number(todayFood.rows[0]?.fat_g || 0),
+      fibre_g:   Number(todayFood.rows[0]?.fibre_g || 0),
+      sugar_g:   Number(todayFood.rows[0]?.sugar_g || 0),
     },
     todayBurned: Number(todayEx.rows[0]?.burned || 0),
     todayWater: Number(todayWater.rows[0]?.ml || 0),
@@ -185,7 +189,7 @@ export default async function DashboardPage() {
   ];
 
   const calTarget = user.calorie_target || 2000;
-  const waterTarget = 2000;
+  const waterTarget = user.water_target_ml ?? 2000;
   const stepsTarget = 10000;
 
   return (
@@ -220,11 +224,13 @@ export default async function DashboardPage() {
         </div>
 
         {/* 2x2 quick stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-5">
           <MiniStat icon={Utensils} label="Energy in" value={`${Math.round(d.todayFood.calories)}`} target={calTarget} unit="kcal" />
           <MiniStat icon={Dumbbell} label="Energy out" value={`${Math.round(d.todayBurned)}`} target={null} unit="kcal" />
           <MiniStat icon={Droplet}  label="Water" value={`${(d.todayWater / 1000).toFixed(1)}`} target={waterTarget / 1000} unit="L" />
           <MiniStat icon={Footprints} label="Steps" value={d.todaySteps.toLocaleString()} target={stepsTarget} unit="" />
+          <MiniStat icon={Utensils} label="Fibre" value={`${Math.round(d.todayFood.fibre_g)}`} target={null} unit="g" />
+          <MiniStat icon={Utensils} label="Sugar" value={`${Math.round(d.todayFood.sugar_g)}`} target={null} unit="g" />
         </div>
       </div>
 
@@ -251,7 +257,7 @@ export default async function DashboardPage() {
           <h3 className="font-semibold text-sm mb-2 flex items-center gap-1.5" style={{ color: 'rgb(var(--text))' }}>
             <Droplet size={14} style={{ color: 'rgb(var(--teal))' }} /> Water (30 days)
           </h3>
-          <WaterChart data={d.waterChartData} days={30} />
+          <WaterChart data={d.waterChartData} days={30} goalMl={waterTarget} />
         </div>
         <div className="card">
           <h3 className="font-semibold text-sm mb-2 flex items-center gap-1.5" style={{ color: 'rgb(var(--text))' }}>

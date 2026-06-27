@@ -21,9 +21,10 @@ export async function GET(request: NextRequest) {
   if (to)   { params.push(to);   where += ` AND entry_date <= $${params.length}`; }
   const r = await query(
     `SELECT id, entry_date::text AS entry_date, meal, description,
-            calories::text AS calories,
-            protein_g::text AS protein_g, carbs_g::text AS carbs_g, fat_g::text AS fat_g,
-            created_at
+             calories::text AS calories,
+             protein_g::text AS protein_g, carbs_g::text AS carbs_g, fat_g::text AS fat_g,
+             fibre_g::text AS fibre_g, sugar_g::text AS sugar_g,
+             created_at
        FROM food_logs
       WHERE ${where}
       ORDER BY entry_date DESC, created_at DESC
@@ -44,8 +45,8 @@ export async function POST(request: NextRequest) {
   const date = parsed.data.entry_date || todayISO();
   const r = await query<{ id: number }>(
     `INSERT INTO food_logs
-       (user_id, entry_date, meal, description, calories, protein_g, carbs_g, fat_g)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       (user_id, entry_date, meal, description, calories, protein_g, carbs_g, fat_g, fibre_g, sugar_g)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      RETURNING id`,
     [
       auth.user.id,
@@ -55,7 +56,9 @@ export async function POST(request: NextRequest) {
       parsed.data.calories,
       parsed.data.protein_g ?? null,
       parsed.data.carbs_g ?? null,
-      parsed.data.fat_g ?? null
+      parsed.data.fat_g ?? null,
+      parsed.data.fibre_g ?? null,
+      parsed.data.sugar_g ?? null
     ]
   );
   await audit({ userId: auth.user.id, action: 'food_log_create',

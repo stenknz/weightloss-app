@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
             target_calorie_deficit,
             to_char(target_date, 'YYYY-MM-DD') AS target_date,
             calorie_target, protein_target_g, carbs_target_g, fat_target_g,
+            water_target_ml,
             photo_storage_used_bytes,
             created_at, updated_at
        FROM users WHERE id = $1`,

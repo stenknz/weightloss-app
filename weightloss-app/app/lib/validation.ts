@@ -73,7 +73,9 @@ export const foodLogSchema = z.object({
   calories: z.number().min(0).max(50000),
   protein_g: z.number().min(0).max(2000).optional().nullable(),
   carbs_g:   z.number().min(0).max(2000).optional().nullable(),
-  fat_g:     z.number().min(0).max(2000).optional().nullable()
+  fat_g:     z.number().min(0).max(2000).optional().nullable(),
+  fibre_g:   z.number().min(0).max(2000).optional().nullable(),
+  sugar_g:   z.number().min(0).max(2000).optional().nullable()
 });
 
 export const exerciseLogSchema = z.object({

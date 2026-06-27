@@ -18,7 +18,7 @@ export default async function WaterPage() {
   return (
     <div className="space-y-3">
       <h1 className="text-2xl font-bold">Water</h1>
-      <WaterClient initial={r.rows} />
+      <WaterClient initial={r.rows} goalMl={user.water_target_ml ?? 2700} />
     </div>
   );
 }
