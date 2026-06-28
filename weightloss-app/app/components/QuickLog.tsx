@@ -74,7 +74,7 @@ function WeightForm({ date, pending, onSaved }: any) {
     >
       <label className="block">
         <span className="label">Weight (kg)</span>
-        <input className="input" type="number" step="0.1" min="1" max="500" required
+        <input className="input" type="number" step="0.1" min="0.1" max="500" required
                value={kg} onChange={(e) => setKg(e.target.value)} />
       </label>
       <label className="block sm:col-span-2">
