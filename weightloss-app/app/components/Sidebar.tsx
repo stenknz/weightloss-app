@@ -69,7 +69,7 @@ export function Sidebar({ user }: { user: CurrentUser }) {
         </Link>
 
         {/* Nav items */}
-        <nav className="flex flex-col items-center gap-0.5 flex-1">
+        <nav className="flex flex-col items-center gap-0.5 flex-1 overflow-y-auto min-h-0 w-full">
           {mainNav.map((n) => (
             <Link
               key={n.href}
