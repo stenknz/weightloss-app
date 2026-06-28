@@ -44,12 +44,13 @@ export async function awardXp(
     [userId, eventType, pts, sourceTable ?? null, sourceId ?? null]
   );
 
-  const r = await query<{ total_xp: number; level: number }>(
+  const r = await query<{ total_xp: string; level: number }>(
     `SELECT COALESCE(total_xp,0) AS total_xp, COALESCE(level,1) AS level FROM user_levels WHERE user_id = $1`,
     [userId]
   );
-  const current = r.rows[0] ?? { total_xp: 0, level: 1 };
-  const newTotal = current.total_xp + pts;
+  const current = r.rows[0] ?? { total_xp: '0', level: 1 };
+  const currentTotalXp = Number(current.total_xp);
+  const newTotal = currentTotalXp + pts;
   const newLevel = calculateLevel(newTotal);
 
   await query('UPDATE user_levels SET total_xp = $1, level = $2, updated_at = now() WHERE user_id = $3',

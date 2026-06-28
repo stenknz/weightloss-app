@@ -12,9 +12,10 @@ export async function getStreaks(userId: number) {
 export async function updateStreak(
   userId: number, streakType: string, activityDate: string
 ): Promise<{ streakMilestones: string[]; protectionUsed: boolean }> {
-  const [streak] = (await query(
+  const streakRows = (await query(
     'SELECT * FROM streaks WHERE user_id = $1 AND streak_type = $2', [userId, streakType]
-  )).rows ?? { current_count: 0, longest_count: 0, last_activity_date: null };
+  )).rows;
+  const streak = streakRows.length > 0 ? streakRows[0] : { current_count: 0, longest_count: 0, last_activity_date: null };
 
   const today = new Date(activityDate);
   const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);

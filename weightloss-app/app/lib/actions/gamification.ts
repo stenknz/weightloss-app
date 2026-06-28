@@ -30,11 +30,13 @@ export async function getGamificationData() {
   const lvl = levelData.rows[0] ?? { level: 1, total_xp: 0 };
   const s = stats.rows[0] ?? {};
   const j = journey.rows[0] ?? { progress_km: 0, current_milestone: null, completed: false };
-  const { currentLevelXp, xpForNext } = xpProgress(lvl.total_xp, lvl.level);
+  const totalXp = Number(lvl.total_xp);
+  const level = Number(lvl.level);
+  const { currentLevelXp, xpForNext } = xpProgress(totalXp, level);
 
   return {
-    level: lvl.level,
-    totalXp: lvl.total_xp,
+    level,
+    totalXp,
     xpProgress: { current: currentLevelXp, needed: xpForNext },
     stats: s,
     streaks,
