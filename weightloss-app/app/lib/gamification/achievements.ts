@@ -62,7 +62,7 @@ async function checkCondition(userId: number, type: string, value: number): Prom
       const target = user.rows[0]?.calorie_target ?? 2000;
       const r = await query(
         `SELECT entry_date, COALESCE(SUM(calories),0) AS cals FROM food_logs
-         WHERE user_id = $1 AND entry_date >= CURRENT_DATE - ($2 || ' days')::INTERVAL
+         WHERE user_id = $1 AND entry_date >= CURRENT_DATE - $2::integer
          GROUP BY entry_date ORDER BY entry_date DESC LIMIT $2`,
         [userId, value]
       );
