@@ -20,7 +20,7 @@ export function WeighInClient({ initial, targetKg }: { initial: Row[]; targetKg:
   async function save(e: React.FormEvent) {
     e.preventDefault();
     const w = Number(kg);
-    if (!Number.isFinite(w) || w <= 0) { toast('err', 'Enter a valid weight'); return; }
+    if (!Number.isFinite(w) || w < 20) { toast('err', 'Enter a valid weight (min 20 kg)'); return; }
     try {
       const result = await createWeighIn({ entry_date: date, weight_kg: w, note: note || null });
       if (result.error) { toast('err', result.error); return; }
@@ -60,7 +60,7 @@ export function WeighInClient({ initial, targetKg }: { initial: Row[]; targetKg:
         </label>
         <label className="block">
           <span className="label">Weight (kg)</span>
-          <input className="input" type="number" step="0.1" min="0.1" max="500" required
+          <input className="input" type="number" step="0.1" min="20" max="500" required
                  value={kg} onChange={(e) => setKg(e.target.value)} />
         </label>
         <label className="block sm:col-span-2">

@@ -339,9 +339,32 @@ INSERT INTO streaks (user_id, streak_type)
   CROSS JOIN (VALUES ('logging'),('water'),('nutrition'),('exercise')) AS s(streak_type)
   ON CONFLICT (user_id, streak_type) DO NOTHING;
 
--- Fix corrupted user_levels from pg BIGINT→string concatenation bug
--- Resets total_xp to actual SUM(points) from xp_events (stored correctly)
--- and sets level=1 (auto-recalculated on next event via binary-search fix)
+-- Fix data corruption bugs (idempotent — safe to run on every container start)
+
+-- 1. Corrupt weigh-ins (weight_kg < 20 is impossible for adult humans)
+--    Caused by: Number('.8') = 0.8 bypassing positive() validation
+--    If found, reset the user's gamification entirely (they requested it).
+DO $$
+DECLARE
+  affected INT[];
+BEGIN
+  SELECT ARRAY_AGG(DISTINCT user_id) INTO affected FROM weigh_ins WHERE weight_kg < 20;
+  IF affected IS NOT NULL AND array_length(affected, 1) > 0 THEN
+    DELETE FROM xp_events WHERE user_id = ANY(affected);
+    UPDATE user_levels SET total_xp = 0, level = 1, updated_at = now() WHERE user_id = ANY(affected);
+    UPDATE streaks SET current_count = 0, longest_count = 0, last_activity_date = NULL, updated_at = now() WHERE user_id = ANY(affected);
+    UPDATE user_stats SET total_xp = 0, current_level = 1, longest_streak = 0, achievements_unlocked = 0, total_days_logged = 0, total_water_ml = 0, total_calories_tracked = 0, challenges_completed = 0, total_weight_kg_lost = 0, journeys_completed = 0, streak_protection_tokens = 0, updated_at = now() WHERE user_id = ANY(affected);
+    DELETE FROM user_achievements WHERE user_id = ANY(affected);
+    DELETE FROM daily_quests WHERE user_id = ANY(affected);
+    DELETE FROM weekly_challenges WHERE user_id = ANY(affected);
+    DELETE FROM journey_progress WHERE user_id = ANY(affected);
+    DELETE FROM weigh_ins WHERE weight_kg < 20;
+  END IF;
+END;
+$$;
+
+-- 2. Fix corrupted user_levels from pg BIGINT→string concatenation bug
+--    Resets total_xp to actual SUM(points) from xp_events (stored correctly)
 UPDATE user_levels
 SET total_xp = COALESCE((
   SELECT SUM(points)::bigint

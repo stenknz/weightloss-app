@@ -52,7 +52,7 @@ export const profileSchema = z.object({
 
 export const weighInSchema = z.object({
   entry_date: dateString,
-  weight_kg: z.number().positive().max(500),
+  weight_kg: z.number().min(20).max(500),
   note: z.string().trim().max(1000).optional().nullable()
 });
 
