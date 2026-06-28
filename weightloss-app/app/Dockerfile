@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 RUN apk add --no-cache libc6-compat
 WORKDIR /build
 COPY package.json package-lock.json* ./
@@ -8,7 +8,7 @@ ARG DATABASE_URL=postgres://p:p@localhost:5432/p
 ENV NEXT_TELEMETRY_DISABLED=1 DATABASE_URL=$DATABASE_URL
 RUN mkdir -p public && npm run build
 
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
