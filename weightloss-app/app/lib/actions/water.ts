@@ -5,6 +5,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { waterLogSchema } from '@/lib/validation';
 import { todayISO } from '@/lib/utils';
 import { audit } from '@/lib/audit';
+import { handleEvent } from '@/lib/gamification';
 
 export async function createWater(data: Record<string, unknown>) {
   const user = await getCurrentUser();
@@ -23,7 +24,8 @@ export async function createWater(data: Record<string, unknown>) {
   await audit({ userId: user.id, action: 'water_log_create',
     targetType: 'water_log', targetId: r.rows[0].id,
     details: { date, amount_ml: parsed.data.amount_ml } });
-  return { id: r.rows[0].id };
+  const game = await handleEvent({ userId: user.id, type: 'water_logged', sourceTable: 'water_logs', sourceId: r.rows[0].id, data: { amount_ml: parsed.data.amount_ml } });
+  return { id: r.rows[0].id, game };
 }
 
 export async function deleteWater(id: number) {

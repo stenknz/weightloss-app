@@ -6,6 +6,7 @@ import { parseISO, differenceInDays, subDays } from 'date-fns';
 import Link from 'next/link';
 import { Scale, Utensils, Dumbbell, Droplet, Footprints, ArrowRight } from 'lucide-react';
 import { QuickLog } from '@/components/QuickLog';
+import { GamificationWidget } from '@/components/gamification/GamificationWidget';
 import dynamicImport from 'next/dynamic';
 import { WeightRing } from '@/components/WeightRing';
 import type { MacroData } from '@/components/MacroChart';
@@ -291,6 +292,10 @@ export default async function DashboardPage() {
           Quick log for {fmtDate(d.today)}
         </h2>
         <QuickLog date={d.today} />
+      </div>
+
+      <div className="mt-5">
+        <GamificationWidget />
       </div>
     </div>
   );

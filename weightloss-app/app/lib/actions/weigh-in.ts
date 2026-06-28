@@ -5,6 +5,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { weighInSchema } from '@/lib/validation';
 import { todayISO } from '@/lib/utils';
 import { audit } from '@/lib/audit';
+import { handleEvent } from '@/lib/gamification';
 
 export async function createWeighIn(data: Record<string, unknown>) {
   const user = await getCurrentUser();
@@ -25,7 +26,8 @@ export async function createWeighIn(data: Record<string, unknown>) {
   await audit({ userId: user.id, action: 'weigh_in_upsert',
     targetType: 'weigh_in', targetId: r.rows[0].id,
     details: { date, weight_kg: parsed.data.weight_kg } });
-  return { id: r.rows[0].id, entry_date: date };
+  const game = await handleEvent({ userId: user.id, type: 'weigh_in_logged', sourceTable: 'weigh_ins', sourceId: r.rows[0].id, data: { weight_kg: parsed.data.weight_kg } });
+  return { id: r.rows[0].id, entry_date: date, game };
 }
 
 export async function deleteWeighIn(id: number) {

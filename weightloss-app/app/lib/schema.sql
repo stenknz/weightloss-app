@@ -200,3 +200,141 @@ UPDATE users SET water_target_ml = 3700 WHERE sex = 'male' AND water_target_ml =
 
 ALTER TABLE food_logs ADD COLUMN IF NOT EXISTS fibre_g NUMERIC(6,1) CHECK (fibre_g IS NULL OR fibre_g >= 0);
 ALTER TABLE food_logs ADD COLUMN IF NOT EXISTS sugar_g NUMERIC(6,1) CHECK (sugar_g IS NULL OR sugar_g >= 0);
+
+-- =============================================================================
+-- Gamification tables (v2.0 — all IF NOT EXISTS, zero production risk)
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS xp_events (
+  id BIGSERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  event_type TEXT NOT NULL,
+  points INTEGER NOT NULL CHECK (points > 0),
+  source_table TEXT,
+  source_id INTEGER,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS xp_events_user ON xp_events(user_id, created_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS xp_events_source ON xp_events(source_table, source_id) WHERE source_table IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS user_levels (
+  user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  level INTEGER NOT NULL DEFAULT 1,
+  total_xp BIGINT NOT NULL DEFAULT 0,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS achievements (
+  id SERIAL PRIMARY KEY,
+  slug TEXT UNIQUE NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT NOT NULL,
+  category TEXT NOT NULL CHECK (category IN ('beginner','consistency','weight_loss','nutrition','special')),
+  icon TEXT,
+  xp_reward INTEGER NOT NULL DEFAULT 0,
+  condition_type TEXT NOT NULL,
+  condition_value INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS user_achievements (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  achievement_id INTEGER NOT NULL REFERENCES achievements(id) ON DELETE CASCADE,
+  unlocked_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  xp_awarded INTEGER NOT NULL DEFAULT 0,
+  UNIQUE(user_id, achievement_id)
+);
+
+CREATE TABLE IF NOT EXISTS daily_quests (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  quest_date DATE NOT NULL,
+  quest_type TEXT NOT NULL,
+  target_value REAL NOT NULL DEFAULT 1,
+  progress REAL NOT NULL DEFAULT 0,
+  completed BOOLEAN NOT NULL DEFAULT FALSE,
+  xp_reward INTEGER NOT NULL DEFAULT 10,
+  completed_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS daily_quests_user_date ON daily_quests(user_id, quest_date);
+
+CREATE TABLE IF NOT EXISTS weekly_challenges (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  week_start DATE NOT NULL,
+  challenge_type TEXT NOT NULL,
+  target_value REAL NOT NULL DEFAULT 1,
+  progress REAL NOT NULL DEFAULT 0,
+  completed BOOLEAN NOT NULL DEFAULT FALSE,
+  xp_reward INTEGER NOT NULL DEFAULT 75,
+  completed_at TIMESTAMPTZ
+);
+CREATE UNIQUE INDEX IF NOT EXISTS weekly_challenges_user_week ON weekly_challenges(user_id, week_start);
+
+CREATE TABLE IF NOT EXISTS streaks (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  streak_type TEXT NOT NULL CHECK (streak_type IN ('logging','water','nutrition','exercise')),
+  current_count INTEGER NOT NULL DEFAULT 0,
+  longest_count INTEGER NOT NULL DEFAULT 0,
+  last_activity_date DATE,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(user_id, streak_type)
+);
+
+CREATE TABLE IF NOT EXISTS user_stats (
+  user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  total_xp BIGINT NOT NULL DEFAULT 0,
+  current_level INTEGER NOT NULL DEFAULT 1,
+  longest_streak INTEGER NOT NULL DEFAULT 0,
+  achievements_unlocked INTEGER NOT NULL DEFAULT 0,
+  total_days_logged INTEGER NOT NULL DEFAULT 0,
+  total_water_ml BIGINT NOT NULL DEFAULT 0,
+  total_calories_tracked BIGINT NOT NULL DEFAULT 0,
+  challenges_completed INTEGER NOT NULL DEFAULT 0,
+  total_weight_kg_lost REAL NOT NULL DEFAULT 0,
+  journeys_completed INTEGER NOT NULL DEFAULT 0,
+  streak_protection_tokens INTEGER NOT NULL DEFAULT 0,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS journey_progress (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  journey_type TEXT NOT NULL DEFAULT 'nz_walk',
+  total_distance_km REAL NOT NULL DEFAULT 3000,
+  progress_km REAL NOT NULL DEFAULT 0,
+  current_milestone TEXT,
+  completed BOOLEAN NOT NULL DEFAULT FALSE,
+  completed_at TIMESTAMPTZ
+);
+CREATE UNIQUE INDEX IF NOT EXISTS journey_progress_user ON journey_progress(user_id, journey_type);
+
+INSERT INTO achievements (slug, name, description, category, xp_reward, condition_type, condition_value) VALUES
+  ('first_weigh_in', 'First Steps', 'Log your first weigh-in', 'beginner', 25, 'weigh_in_count', 1),
+  ('first_food', 'Fuel Up', 'Log your first food entry', 'beginner', 25, 'food_count', 1),
+  ('first_litre', 'Hydrated', 'Log 1L of water total', 'beginner', 25, 'water_ml', 1000),
+  ('streak_3', 'Threepeat', 'Maintain a 3-day logging streak', 'consistency', 50, 'streak_days', 3),
+  ('streak_7', 'Week Warrior', 'Maintain a 7-day logging streak', 'consistency', 100, 'streak_days', 7),
+  ('streak_30', 'Monthly Master', 'Maintain a 30-day logging streak', 'consistency', 500, 'streak_days', 30),
+  ('streak_100', 'Century Club', 'Maintain a 100-day logging streak', 'consistency', 2000, 'streak_days', 100),
+  ('streak_365', 'Year Strong', 'Maintain a 365-day logging streak', 'consistency', 10000, 'streak_days', 365),
+  ('weight_loss_1', 'First Kilo', 'Lose 1 kg from your starting weight', 'weight_loss', 100, 'weight_lost_kg', 1),
+  ('weight_loss_5', 'Half Stone', 'Lose 5 kg from your starting weight', 'weight_loss', 300, 'weight_lost_kg', 5),
+  ('weight_loss_10', 'Double Digits', 'Lose 10 kg from your starting weight', 'weight_loss', 1000, 'weight_lost_kg', 10),
+  ('weight_loss_20', 'Transform', 'Lose 20 kg from your starting weight', 'weight_loss', 3000, 'weight_lost_kg', 20),
+  ('calorie_7_days', 'Calorie Controlled', 'Hit your calorie goal 7 days in a row', 'nutrition', 200, 'calorie_streak_days', 7),
+  ('protein_30', 'Protein Power', 'Hit your protein goal 30 times', 'nutrition', 500, 'protein_hit_count', 30),
+  ('water_50', 'Aqua Champion', 'Hit your water goal 50 times', 'nutrition', 500, 'water_hit_count', 50),
+  ('full_month', 'Full Month', 'Log every day for a full calendar month', 'special', 1000, 'daily_log_month', 1),
+  ('early_bird_50', 'Early Bird', 'Log before 7 AM 50 times', 'special', 200, 'early_log_count', 50),
+  ('night_owl_50', 'Night Owl', 'Log after 10 PM 50 times', 'special', 200, 'late_log_count', 50),
+  ('nz_walker', 'NZ Walker', 'Complete the New Zealand journey map', 'special', 5000, 'journey_complete', 1)
+ON CONFLICT (slug) DO NOTHING;
+
+INSERT INTO user_levels (user_id, level, total_xp) SELECT id, 1, 0 FROM users ON CONFLICT (user_id) DO NOTHING;
+INSERT INTO user_stats (user_id) SELECT id FROM users ON CONFLICT (user_id) DO NOTHING;
+INSERT INTO streaks (user_id, streak_type)
+  SELECT u.id, s.streak_type FROM users u
+  CROSS JOIN (VALUES ('logging'),('water'),('nutrition'),('exercise')) AS s(streak_type)
+  ON CONFLICT (user_id, streak_type) DO NOTHING;
