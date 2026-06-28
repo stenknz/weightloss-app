@@ -338,3 +338,15 @@ INSERT INTO streaks (user_id, streak_type)
   SELECT u.id, s.streak_type FROM users u
   CROSS JOIN (VALUES ('logging'),('water'),('nutrition'),('exercise')) AS s(streak_type)
   ON CONFLICT (user_id, streak_type) DO NOTHING;
+
+-- Fix corrupted user_levels from pg BIGINT→string concatenation bug
+-- Resets total_xp to actual SUM(points) from xp_events (stored correctly)
+-- and sets level=1 (auto-recalculated on next event via binary-search fix)
+UPDATE user_levels
+SET total_xp = COALESCE((
+  SELECT SUM(points)::bigint
+  FROM xp_events
+  WHERE user_id = user_levels.user_id
+), 0),
+level = 1,
+updated_at = now();
