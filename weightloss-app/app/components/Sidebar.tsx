@@ -55,7 +55,7 @@ export function Sidebar({ user }: { user: CurrentUser }) {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex fixed left-0 top-0 h-full z-40 flex-col items-center py-3 gap-1 w-16"
+      <aside className="hidden md:flex fixed left-0 top-0 h-full z-40 flex-col w-16"
         style={{
           background: 'rgba(var(--panel-rgb), 0.6)',
           backdropFilter: 'blur(20px)',
@@ -63,44 +63,51 @@ export function Sidebar({ user }: { user: CurrentUser }) {
           borderRight: '1px solid rgba(var(--border), 0.2)'
         }}
       >
-        {/* Logo */}
-        <Link href="/" className="mb-3 flex items-center justify-center w-10 h-10 rounded-xl gradient-accent">
-          <span className="text-white font-bold text-sm">WL</span>
-        </Link>
+        {/* Scrollable top section: logo + nav */}
+        <div className="flex-1 flex flex-col items-center gap-0.5 py-3 overflow-y-auto scrollbar-none min-h-0">
+          <Link href="/" className="mb-3 flex items-center justify-center w-10 h-10 rounded-xl gradient-accent flex-shrink-0">
+            <span className="text-white font-bold text-sm">WL</span>
+          </Link>
 
-        {/* Nav items */}
-        <nav className="scrollbar-none flex flex-col items-center gap-0.5 flex-1 overflow-y-auto min-h-0">
-          {mainNav.map((n) => (
-            <Link
-              key={n.href}
-              href={n.href}
-              className="group relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-150"
-              style={{
-                background: isActive(n.href) ? 'linear-gradient(135deg, rgb(var(--teal) / 0.15), rgb(var(--blue) / 0.15))' : 'transparent',
-                color: isActive(n.href) ? 'rgb(var(--accent))' : 'rgb(var(--muted))'
-              }}
-            >
-              <n.icon size={18} />
-              <span className="absolute left-14 px-2 py-1 rounded-lg text-xs font-medium whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
+          <nav className="flex flex-col items-center gap-0.5">
+            {mainNav.map((n) => (
+              <Link
+                key={n.href}
+                href={n.href}
+                className="group relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-150 flex-shrink-0"
                 style={{
-                  background: 'rgb(var(--panel))',
-                  border: '1px solid rgba(var(--border), 0.3)',
-                  color: 'rgb(var(--text))'
+                  background: isActive(n.href) ? 'linear-gradient(135deg, rgb(var(--teal) / 0.15), rgb(var(--blue) / 0.15))' : 'transparent',
+                  color: isActive(n.href) ? 'rgb(var(--accent))' : 'rgb(var(--muted))'
                 }}
               >
-                {n.label}
-              </span>
-            </Link>
-          ))}
-        </nav>
+                <n.icon size={18} />
+                <span className="absolute left-14 px-2 py-1 rounded-lg text-xs font-medium whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{
+                    background: 'rgb(var(--panel))',
+                    border: '1px solid rgba(var(--border), 0.3)',
+                    color: 'rgb(var(--text))'
+                  }}
+                >
+                  {n.label}
+                </span>
+              </Link>
+            ))}
+          </nav>
+        </div>
 
-        {/* Bottom section */}
-        <div className="flex flex-col items-center gap-0.5 mt-auto flex-shrink-0">
+        {/* Bottom section - always visible */}
+        <div className="flex-shrink-0 flex flex-col items-center gap-0.5 py-3"
+          style={{
+            background: 'rgba(var(--panel-rgb), 0.6)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+          }}
+        >
           {bottomNav.map((n) => (
             <Link
               key={n.href}
               href={n.href}
-              className="group relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-150"
+              className="group relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-150 flex-shrink-0"
               style={{
                 background: isActive(n.href) ? 'linear-gradient(135deg, rgb(var(--teal) / 0.15), rgb(var(--blue) / 0.15))' : 'transparent',
                 color: isActive(n.href) ? 'rgb(var(--accent))' : 'rgb(var(--muted))'
@@ -120,13 +127,13 @@ export function Sidebar({ user }: { user: CurrentUser }) {
           ))}
 
           {/* Divider */}
-          <div className="w-6 h-px my-2" style={{ background: 'rgba(var(--border), 0.3)' }} />
+          <div className="w-6 h-px my-2 flex-shrink-0" style={{ background: 'rgba(var(--border), 0.3)' }} />
 
           {/* Theme toggle */}
           <button
             type="button"
             onClick={() => setTheme(nextTheme)}
-            className="group relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-150"
+            className="group relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-150 flex-shrink-0"
             style={{ color: 'rgb(var(--muted))' }}
             aria-label="Toggle theme"
           >
