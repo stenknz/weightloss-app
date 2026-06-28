@@ -14,12 +14,14 @@ export function WaterClient({ initial, goalMl }: { initial: Row[]; goalMl: numbe
   const [rows, setRows] = useState<Row[]>(initial);
   const [date, setDate] = useState(todayISO());
   const [amount, setAmount] = useState('250');
+  const [saving, setSaving] = useState(false);
   const [pending, startTransition] = useTransition();
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     const n = Number(amount);
     if (!Number.isFinite(n) || n <= 0) { toast('err', 'Enter a valid amount'); return; }
+    setSaving(true);
     try {
       const result = await createWater({ entry_date: date, amount_ml: Math.round(n) });
       if (result.error) { toast('err', result.error); return; }
@@ -28,6 +30,7 @@ export function WaterClient({ initial, goalMl }: { initial: Row[]; goalMl: numbe
       toast('ok', 'Logged');
       startTransition(() => router.refresh());
     } catch (e) { toast('err', (e as Error).message); }
+    finally { setSaving(false); }
   }
 
   async function remove(id: number) {
@@ -62,7 +65,7 @@ export function WaterClient({ initial, goalMl }: { initial: Row[]; goalMl: numbe
           {[250, 500, 750, 1000].map((v) => (
             <button key={v} type="button" className="btn" onClick={() => setAmount(String(v))}>{v} ml</button>
           ))}
-          <button className="btn-primary" disabled={pending}>Log</button>
+          <button className="btn-primary" disabled={saving || pending}>Log</button>
         </div>
       </form>
 

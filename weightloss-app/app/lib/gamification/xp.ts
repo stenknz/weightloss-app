@@ -14,12 +14,22 @@ export function xpForLevel(n: number): number {
 }
 
 export function calculateLevel(totalXp: number): number {
-  let level = 1;
-  while (true) {
-    const needed = xpForLevel(level + 1);
-    if (needed > totalXp) return level;
-    level++;
+  // Exponential search to find upper bound
+  let high = 2;
+  while (xpForLevel(high) <= totalXp && high < 10000000) {
+    high *= 2;
   }
+
+  let low = 1;
+  while (low < high) {
+    const mid = Math.floor((low + high + 1) / 2);
+    if (xpForLevel(mid) <= totalXp) {
+      low = mid;
+    } else {
+      high = mid - 1;
+    }
+  }
+  return low;
 }
 
 export function xpProgress(totalXp: number, level: number): { currentLevelXp: number; xpForNext: number } {
