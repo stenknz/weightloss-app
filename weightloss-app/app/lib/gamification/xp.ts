@@ -45,14 +45,21 @@ export async function awardXp(
   if (!pts) return { oldLevel: 0, newLevel: 0 };
 
   if (sourceTable && sourceId != null) {
-    const exists = await query('SELECT 1 FROM xp_events WHERE source_table = $1 AND source_id = $2', [sourceTable, sourceId]);
-    if (exists.rowCount && exists.rowCount > 0) return { oldLevel: 0, newLevel: 0 };
+    const r2 = await query<{ id: number }>(
+      `INSERT INTO xp_events (user_id, event_type, points, source_table, source_id)
+       VALUES ($1,$2,$3,$4,$5)
+       ON CONFLICT (user_id, source_table, source_id) WHERE source_table IS NOT NULL
+       DO NOTHING
+       RETURNING id`,
+      [userId, eventType, pts, sourceTable, sourceId]
+    );
+    if (r2.rows.length === 0) return { oldLevel: 0, newLevel: 0 };
+  } else {
+    await query(
+      'INSERT INTO xp_events (user_id, event_type, points, source_table, source_id) VALUES ($1,$2,$3,$4,$5)',
+      [userId, eventType, pts, null, null]
+    );
   }
-
-  await query(
-    'INSERT INTO xp_events (user_id, event_type, points, source_table, source_id) VALUES ($1,$2,$3,$4,$5)',
-    [userId, eventType, pts, sourceTable ?? null, sourceId ?? null]
-  );
 
   const r = await query<{ total_xp: string; level: number }>(
     `SELECT COALESCE(total_xp,0) AS total_xp, COALESCE(level,1) AS level FROM user_levels WHERE user_id = $1`,

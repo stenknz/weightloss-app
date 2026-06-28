@@ -115,6 +115,13 @@ export async function register(
         [u.rows[0].id, parsed.data.invite_code.toUpperCase()]
       );
     }
+    // Seed gamification rows for new user
+    await client.query('INSERT INTO user_levels (user_id, level, total_xp) VALUES ($1, 1, 0) ON CONFLICT DO NOTHING', [u.rows[0].id]);
+    await client.query('INSERT INTO user_stats (user_id) VALUES ($1) ON CONFLICT DO NOTHING', [u.rows[0].id]);
+    await client.query(
+      `INSERT INTO streaks (user_id, streak_type) VALUES ($1, 'logging'), ($1, 'water'), ($1, 'nutrition'), ($1, 'exercise') ON CONFLICT DO NOTHING`,
+      [u.rows[0].id]
+    );
     const sid = await createSessionInTransaction(client, u.rows[0].id, ip, ua);
     return { user: u.rows[0], ...sid };
   });

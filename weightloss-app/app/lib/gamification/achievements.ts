@@ -73,8 +73,12 @@ async function checkCondition(userId: number, type: string, value: number): Prom
       const user = await query<{ protein_target_g: number }>('SELECT protein_target_g FROM users WHERE id = $1', [userId]);
       const target = user.rows[0]?.protein_target_g ?? 100;
       const r = await query(
-        `SELECT COUNT(DISTINCT entry_date) AS c FROM food_logs
-         WHERE user_id = $1 AND COALESCE(protein_g,0) >= $2`,
+        `SELECT COUNT(*) AS c FROM (
+           SELECT entry_date FROM food_logs
+           WHERE user_id = $1
+           GROUP BY entry_date
+           HAVING SUM(COALESCE(protein_g,0)) >= $2
+         ) sub`,
         [userId, target]
       );
       return Number(r.rows[0]?.c ?? 0) >= value;
@@ -83,11 +87,62 @@ async function checkCondition(userId: number, type: string, value: number): Prom
       const user = await query<{ water_target_ml: number }>('SELECT water_target_ml FROM users WHERE id = $1', [userId]);
       const target = user.rows[0]?.water_target_ml ?? 2700;
       const r = await query(
-        `SELECT COUNT(DISTINCT entry_date) AS c FROM water_logs
-         WHERE user_id = $1 AND amount_ml >= $2`,
+        `SELECT COUNT(*) AS c FROM (
+           SELECT entry_date FROM water_logs
+           WHERE user_id = $1
+           GROUP BY entry_date
+           HAVING SUM(amount_ml) >= $2
+         ) sub`,
         [userId, target]
       );
       return Number(r.rows[0]?.c ?? 0) >= value;
+    }
+    case 'daily_log_month': {
+      const r = await query(
+        `SELECT COUNT(DISTINCT entry_date) AS c FROM (
+           SELECT entry_date FROM weigh_ins WHERE user_id = $1
+           UNION SELECT entry_date FROM food_logs WHERE user_id = $1
+           UNION SELECT entry_date FROM water_logs WHERE user_id = $1
+           UNION SELECT entry_date FROM exercise_logs WHERE user_id = $1
+           UNION SELECT entry_date FROM step_logs WHERE user_id = $1
+         ) sub
+         WHERE entry_date >= date_trunc('month', CURRENT_DATE)
+           AND entry_date < date_trunc('month', CURRENT_DATE) + INTERVAL '1 month'`,
+        [userId]
+      );
+      return Number(r.rows[0]?.c ?? 0) >= value;
+    }
+    case 'early_log_count': {
+      const r = await query(
+        `SELECT COUNT(*) AS c FROM (
+           SELECT created_at FROM weigh_ins WHERE user_id = $1 AND created_at::time < '07:00:00'
+           UNION ALL SELECT created_at FROM food_logs WHERE user_id = $1 AND created_at::time < '07:00:00'
+           UNION ALL SELECT created_at FROM water_logs WHERE user_id = $1 AND created_at::time < '07:00:00'
+           UNION ALL SELECT created_at FROM exercise_logs WHERE user_id = $1 AND created_at::time < '07:00:00'
+           UNION ALL SELECT created_at FROM step_logs WHERE user_id = $1 AND created_at::time < '07:00:00'
+         ) sub`,
+        [userId]
+      );
+      return Number(r.rows[0]?.c ?? 0) >= value;
+    }
+    case 'late_log_count': {
+      const r = await query(
+        `SELECT COUNT(*) AS c FROM (
+           SELECT created_at FROM weigh_ins WHERE user_id = $1 AND created_at::time >= '22:00:00'
+           UNION ALL SELECT created_at FROM food_logs WHERE user_id = $1 AND created_at::time >= '22:00:00'
+           UNION ALL SELECT created_at FROM water_logs WHERE user_id = $1 AND created_at::time >= '22:00:00'
+           UNION ALL SELECT created_at FROM exercise_logs WHERE user_id = $1 AND created_at::time >= '22:00:00'
+           UNION ALL SELECT created_at FROM step_logs WHERE user_id = $1 AND created_at::time >= '22:00:00'
+         ) sub`,
+        [userId]
+      );
+      return Number(r.rows[0]?.c ?? 0) >= value;
+    }
+    case 'journey_complete': {
+      const r = await query(
+        'SELECT 1 FROM journey_progress WHERE user_id = $1 AND completed = true LIMIT 1', [userId]
+      );
+      return r.rows.length > 0;
     }
     default:
       return false;
