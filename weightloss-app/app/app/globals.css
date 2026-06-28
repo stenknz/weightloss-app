@@ -195,3 +195,9 @@ body {
   border-radius: 6px;
 }
 .dark ::-webkit-scrollbar-thumb:hover { background: rgb(var(--muted)); }
+
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar { display: none; }

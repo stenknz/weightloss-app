@@ -69,7 +69,7 @@ export function Sidebar({ user }: { user: CurrentUser }) {
         </Link>
 
         {/* Nav items */}
-        <nav className="flex flex-col items-center gap-0.5 flex-1 overflow-y-auto min-h-0 w-full">
+        <nav className="scrollbar-none flex flex-col items-center gap-0.5 flex-1 overflow-y-auto min-h-0">
           {mainNav.map((n) => (
             <Link
               key={n.href}
@@ -95,7 +95,7 @@ export function Sidebar({ user }: { user: CurrentUser }) {
         </nav>
 
         {/* Bottom section */}
-        <div className="flex flex-col items-center gap-0.5 mt-auto">
+        <div className="flex flex-col items-center gap-0.5 mt-auto flex-shrink-0">
           {bottomNav.map((n) => (
             <Link
               key={n.href}
