@@ -195,7 +195,7 @@ export default async function DashboardPage() {
   ];
 
   const calTarget = user.calorie_target || 2000;
-  const waterTarget = user.water_target_ml ?? 2000;
+  const waterTarget = user.water_target_ml;
   const stepsTarget = 10000;
 
   return (

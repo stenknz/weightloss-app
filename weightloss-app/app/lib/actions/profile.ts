@@ -36,6 +36,16 @@ export async function updateProfile(data: Record<string, unknown>) {
   params.push(user.id);
   await query(`UPDATE users SET ${sets.join(', ')} WHERE id = $${params.length}`, params);
 
+  if (sex != null) {
+    const r = await query<{ water_target_ml: number }>('SELECT water_target_ml FROM users WHERE id = $1', [user.id]);
+    const currentMl = r.rows[0]?.water_target_ml ?? 2700;
+    if (sex === 'male' && currentMl === 2700) {
+      await query('UPDATE users SET water_target_ml = 3700 WHERE id = $1', [user.id]);
+    } else if (sex === 'female' && currentMl === 3700) {
+      await query('UPDATE users SET water_target_ml = 2700 WHERE id = $1', [user.id]);
+    }
+  }
+
   const ip = headers().get('x-forwarded-for')?.split(',')[0]?.trim() ?? null;
   await audit({ userId: user.id, action: 'profile_update',
     targetType: 'user', targetId: user.id, ip });

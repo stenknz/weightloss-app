@@ -9,12 +9,16 @@ const TABLES = [
   'exercise_logs', 'water_logs', 'step_logs', 'daily_notes'
 ] as const;
 
+function isExportTable(t: string): t is typeof TABLES[number] {
+  return TABLES.includes(t as typeof TABLES[number]);
+}
+
 export async function exportUserData(format: 'json' | 'csv' = 'json', table?: string) {
   const user = await getCurrentUser();
   if (!user) return { error: 'Unauthorized' };
 
   const out: Record<string, unknown[]> = {};
-  if (table && (TABLES as readonly string[]).includes(table)) {
+  if (table && isExportTable(table)) {
     out[table] = (await query(
       `SELECT * FROM ${table} WHERE user_id = $1 ORDER BY id`,
       [user.id]
