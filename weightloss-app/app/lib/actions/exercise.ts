@@ -5,7 +5,6 @@ import { getCurrentUser } from '@/lib/auth';
 import { exerciseLogSchema } from '@/lib/validation';
 import { todayISO } from '@/lib/utils';
 import { audit } from '@/lib/audit';
-import { handleEvent } from '@/lib/gamification';
 
 export async function createExercise(data: Record<string, unknown>) {
   const user = await getCurrentUser();
@@ -32,8 +31,7 @@ export async function createExercise(data: Record<string, unknown>) {
   await audit({ userId: user.id, action: 'exercise_log_create',
     targetType: 'exercise_log', targetId: r.rows[0].id,
     details: { date, activity: parsed.data.activity } });
-  const game = await handleEvent({ userId: user.id, type: 'exercise_logged', sourceTable: 'exercise_logs', sourceId: r.rows[0].id, data: { duration_min: parsed.data.duration_min } });
-  return { id: r.rows[0].id, game };
+  return { id: r.rows[0].id };
 }
 
 export async function deleteExercise(id: number) {

@@ -5,7 +5,6 @@ import { getCurrentUser } from '@/lib/auth';
 import { stepLogSchema } from '@/lib/validation';
 import { todayISO } from '@/lib/utils';
 import { audit } from '@/lib/audit';
-import { handleEvent } from '@/lib/gamification';
 
 export async function createSteps(data: Record<string, unknown>) {
   const user = await getCurrentUser();
@@ -26,8 +25,7 @@ export async function createSteps(data: Record<string, unknown>) {
   await audit({ userId: user.id, action: 'step_log_upsert',
     targetType: 'step_log', targetId: r.rows[0].id,
     details: { date, steps: parsed.data.steps } });
-  const game = await handleEvent({ userId: user.id, type: 'steps_logged', sourceTable: 'step_logs', sourceId: r.rows[0].id, data: { steps: parsed.data.steps } });
-  return { id: r.rows[0].id, game };
+  return { id: r.rows[0].id };
 }
 
 export async function deleteSteps(id: number) {

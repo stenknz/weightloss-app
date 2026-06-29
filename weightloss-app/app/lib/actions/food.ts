@@ -5,7 +5,6 @@ import { getCurrentUser } from '@/lib/auth';
 import { foodLogSchema } from '@/lib/validation';
 import { todayISO } from '@/lib/utils';
 import { audit } from '@/lib/audit';
-import { handleEvent } from '@/lib/gamification';
 
 export async function createFood(data: Record<string, unknown>) {
   const user = await getCurrentUser();
@@ -36,8 +35,7 @@ export async function createFood(data: Record<string, unknown>) {
   await audit({ userId: user.id, action: 'food_log_create',
     targetType: 'food_log', targetId: r.rows[0].id,
     details: { date, calories: parsed.data.calories } });
-  const game = await handleEvent({ userId: user.id, type: 'food_logged', sourceTable: 'food_logs', sourceId: r.rows[0].id, data: { calories: parsed.data.calories, protein_g: parsed.data.protein_g, fibre_g: parsed.data.fibre_g } });
-  return { id: r.rows[0].id, game };
+  return { id: r.rows[0].id };
 }
 
 export async function deleteFood(id: number) {
